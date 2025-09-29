@@ -215,11 +215,11 @@
   ```
 
 #### Validation Gate 2.1:
-- [ ] Window created and visible (use Spy++ to verify)
-- [ ] Verify click-through works (clicks pass to windows below)
-- [ ] Verify WDA_EXCLUDEFROMCAPTURE set (test with screenshot tool)
-- [ ] Window stays topmost after Alt+Tab
-- [ ] **STOP if any validation fails**
+- [x] Window created and visible (validated 2025-09-29)
+- [x] Verify click-through works (validated 2025-09-29)
+- [x] Verify WDA_EXCLUDEFROMCAPTURE set (validated 2025-09-29)
+- [x] Window stays topmost after Alt+Tab (validated 2025-09-29)
+- [x] **STOP if any validation fails**
 
 ### Task 2.2: DirectComposition Swapchain Setup
 
@@ -3826,5 +3826,6 @@ Remember to:
 5. Consider MSIX packaging for Store distribution
 6. Optimize local OCR performance
 7. Add more sophisticated ML-based recommendations
+
 
 
