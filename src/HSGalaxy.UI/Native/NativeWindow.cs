@@ -94,22 +94,27 @@ namespace HSGalaxy.UI.Native
             SetWindowPos(_hwnd, HWND_TOPMOST, work.Left, work.Top, width, height, SWP_NOACTIVATE | SWP_SHOWWINDOW);
         }
 
+        public event EventHandler? DpiChanged;
+
         private IntPtr WndProcImpl(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
         {
             switch (msg)
             {
                 case WM_DPICHANGED:
                     PositionOverlayWindow();
-                    TryApplyDebugTint(alpha: 90);
+                    // TryApplyDebugTint(alpha: 90); // disabled in normal runs
+                    DpiChanged?.Invoke(this, EventArgs.Empty);
                     break;
                 case WM_ACTIVATEAPP:
                     // Reassert topmost after task switching and reapply tint
                     SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
-                    TryApplyDebugTint(alpha: 200); // make it very obvious after switches
+                    // TryApplyDebugTint(alpha: 200); // disabled in normal runs
                     break;
             }
             return DefWindowProcW(hWnd, msg, wParam, lParam);
         }
+
+        public void ClearTint() => TryApplyDebugTint(0);
 
         private void TryApplyDebugTint(byte alpha)
         {
@@ -245,6 +250,8 @@ namespace HSGalaxy.UI.Native
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool GetWindowDisplayAffinity(IntPtr hWnd, out uint pdwAffinity);
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -300,5 +307,12 @@ namespace HSGalaxy.UI.Native
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
         #endregion
+
+        public uint QueryDisplayAffinity()
+        {
+            if (_hwnd == IntPtr.Zero) return 0;
+            if (GetWindowDisplayAffinity(_hwnd, out uint a)) return a;
+            return 0;
+        }
     }
 }
