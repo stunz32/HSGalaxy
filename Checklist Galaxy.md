@@ -171,7 +171,7 @@
 ### Task 2.1: Create Overlay HWND
 
 #### Subtasks:
-- [ ] Create `NativeWindow.cs` with P/Invoke declarations:
+- [x] Create `NativeWindow.cs` with P/Invoke declarations: (completed on 2025-09-29)
   ```csharp
   /// <summary>
   /// Native Win32 window creation and management
@@ -190,8 +190,8 @@
       // Additional P/Invoke for SetWindowPos, ShowWindow, etc.
   }
   ```
-- [ ] Implement window procedure (WndProc) with message handling
-- [ ] Create window with proper styles:
+- [x] Implement window procedure (WndProc) with message handling
+- [x] Create window with proper styles:
   ```csharp
   /// <summary>
   /// Creates overlay window with click-through behavior
@@ -204,8 +204,8 @@
       // Set WDA_EXCLUDEFROMCAPTURE after creation
   }
   ```
-- [ ] Apply `SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)` immediately after creation
-- [ ] Implement window positioning to cover work area:
+- [x] Apply `SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)` immediately after creation
+- [x] Implement window positioning to cover work area:
   ```csharp
   /// <summary>
   /// Positions overlay to cover primary monitor work area
