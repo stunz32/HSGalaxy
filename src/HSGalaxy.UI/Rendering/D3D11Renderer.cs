@@ -6,6 +6,7 @@ using Vortice.Direct3D11;
 using Vortice.DirectComposition;
 using Vortice.DXGI;
 using Vortice.Mathematics;
+using Vortice.DCommon;
 using HSGalaxy.Diagnostics;
 
 namespace HSGalaxy.UI.Rendering
@@ -17,6 +18,7 @@ namespace HSGalaxy.UI.Rendering
     {
         private ID3D11Device? _device;
         private ID3D11DeviceContext? _context;
+        private ID3D11DeviceContext1? _context1;
         private IDXGIFactory2? _factory2;
         private IDXGISwapChain1? _swapChain;
         private IDXGIDevice? _dxgiDevice;
@@ -24,6 +26,8 @@ namespace HSGalaxy.UI.Rendering
         private IDCompositionDevice? _dcompDevice;
         private IDCompositionTarget? _dcompTarget;
         private IDCompositionVisual? _rootVisual;
+
+        // (Optional) D2D removed for now; using D3D11 ClearView for status strip
 
         private bool _isDirty;
         private IntPtr _hwnd;
@@ -92,13 +96,14 @@ namespace HSGalaxy.UI.Rendering
                 null,
                 DriverType.Hardware,
                 DeviceCreationFlags.None,
-                new[] { FeatureLevel.Level_11_1, FeatureLevel.Level_11_0 },
+                new[] { Vortice.Direct3D.FeatureLevel.Level_11_1, Vortice.Direct3D.FeatureLevel.Level_11_0 },
                 out _device,
                 out _context).CheckError();
 
             _dxgiDevice = _device!.QueryInterface<IDXGIDevice>();
             using var adapter = _dxgiDevice.GetAdapter();
             _factory2 = adapter.GetParent<IDXGIFactory2>();
+            _context1 = _context!.QueryInterfaceOrNull<ID3D11DeviceContext1>();
         }
 
         private void CreateSwapChainForComposition()
@@ -118,11 +123,12 @@ namespace HSGalaxy.UI.Rendering
                 BufferCount = (uint)_bufferCount,
                 Scaling = Scaling.Stretch,
                 SwapEffect = SwapEffect.FlipDiscard,
-                AlphaMode = AlphaMode.Premultiplied,
+                AlphaMode = Vortice.DXGI.AlphaMode.Premultiplied,
                 Flags = SwapChainFlags.None
             };
 
             _swapChain = _factory2.CreateSwapChainForComposition(_device, desc);
+            OverlayLogger.Log("Swapchain.Created", $"BufferCount={(int)desc.BufferCount}; AlphaMode={desc.AlphaMode}; Format={desc.Format}");
         }
 
         private void MaybeEscalateBuffers()
@@ -175,6 +181,20 @@ namespace HSGalaxy.UI.Rendering
         {
             if (GetClientRect(hwnd, out RECT rc)) { w = rc.Right - rc.Left; h = rc.Bottom - rc.Top; }
             else { w = h = 0; }
+        }
+
+        public void DrawStatusStrip(Color4 color, float heightDip = 32f)
+        {
+            if (_context1 is null || _swapChain is null || _device is null) return;
+            GetClientSize(_hwnd, out int w, out int h);
+            if (w <= 0 || h <= 0) return;
+            float heightPx = heightDip; // simple DIP->px for now (96 DPI assumption)
+            // Clear the bottom band using ClearView on the current render target
+            using var backBuffer = _swapChain.GetBuffer<ID3D11Texture2D>(0);
+            using var rtv = _device.CreateRenderTargetView(backBuffer);
+            var rect = new Vortice.RawRect(0, (int)(h - heightPx), w, h);
+            _context1.ClearView(rtv, color, new[] { rect });
+            _isDirty = true;
         }
     }
 }

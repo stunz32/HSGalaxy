@@ -74,6 +74,32 @@ public partial class App : Application
             _stressTimer.Start();
         }
 
+        // Optional: status strip stress (HSGALAXY_STRESS_STRIP=1)
+        var stressStrip = Environment.GetEnvironmentVariable("HSGALAXY_STRESS_STRIP");
+        if (string.Equals(stressStrip, "1", StringComparison.OrdinalIgnoreCase))
+        {
+            OverlayLogger.Log("SelfTest.Strip", "begin");
+            var started2 = DateTime.UtcNow;
+            bool flip2 = false;
+            var stripTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMilliseconds(16)
+            };
+            stripTimer.Tick += (_, __) =>
+            {
+                if ((DateTime.UtcNow - started2) > TimeSpan.FromSeconds(2))
+                {
+                    stripTimer.Stop();
+                    OverlayLogger.Log("SelfTest.Strip", "end");
+                    return;
+                }
+                flip2 = !flip2;
+                _renderer?.DrawStatusStrip(new Vortice.Mathematics.Color4(0f, flip2 ? 0.6f : 0.2f, 0f, 1f));
+                _renderer?.PresentIfDirty();
+            };
+            stripTimer.Start();
+        }
+
     }
 
     protected override void OnExit(ExitEventArgs e)

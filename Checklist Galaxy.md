@@ -3830,3 +3830,26 @@ Remember to:
 
 
 
+
+
+### Task 2.3: Status Strip Implementation
+
+#### Subtasks:
+- [x] Create status strip primitive (opaque bottom band) using D3D11 ClearView — 2025-09-29
+  `csharp
+  // D3D11Renderer.DrawStatusStrip(Color4 color, float heightDip)
+  // Uses ClearView on swapchain RTV over bottom band; premultiplied alpha composition preserved
+  `
+- [ ] Create StatusStrip.cs UI component
+- [ ] Implement DirectWrite text rendering
+- [ ] Create text layouts for fields (Status/Region/Latency/P50/P95/Mode)
+- [ ] Implement theme colors
+
+#### Validation Gate 2.3:
+- [x] Status strip renders at bottom of screen (SelfTest.Strip begin/end in overlay.log) — 2025-09-29
+- [ ] Text is crisp at 100%, 125%, 150% DPI
+- [ ] All fields update correctly when values change
+- [ ] Theme switching works instantly
+- [x] Render time typically < 2ms (Present dtMs ~0.16–1.36ms) — 2025-09-29
+- [x] **STOP if any validation fails**
+
