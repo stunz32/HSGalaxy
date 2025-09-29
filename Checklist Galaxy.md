@@ -29,8 +29,8 @@
   trim_trailing_whitespace = true
   insert_final_newline = true
   ```
-- [ ] Create solution file `HSGalaxyArena.sln`
-- [ ] Create project structure:
+- [x] Create solution file `HSGalaxyArena.sln` (completed on 2025-09-29)
+- [x] Create project structure: (completed on 2025-09-29)
   ```
   /src
     /HSGalaxy.App           (WPF .NET 8, main entry)
@@ -47,17 +47,17 @@
     /WPR_Profiles
     /Scripts
   ```
-- [ ] Add NuGet packages to each project:
+- [x] Add NuGet packages to each project: (completed on 2025-09-29)
   - App: `Microsoft.Extensions.DependencyInjection`, `Microsoft.Extensions.Configuration`
   - Core: `Newtonsoft.Json`, `SymSpell`, `System.Drawing.Common`
-  - OCR.Azure: `Azure.AI.Vision.ImageAnalysis`, `System.Net.Http`
-  - UI: `Win32Interop.DirectComposition`, `SharpDX.Direct3D11`, `SharpDX.DXGI`
+  - OCR.Azure: `Azure.AI.Vision.ImageAnalysis` (System.Net.Http is included in .NET; no package needed)
+  - UI: `SharpDX.DirectComposition`, `SharpDX.Direct3D11`, `SharpDX.DXGI` (DirectComposition via SharpDX)
   - Diagnostics: `Microsoft.Diagnostics.Tracing.TraceEvent`
 
 #### Validation Gate 1.1:
-- [ ] Build solution in Debug mode - must succeed with 0 errors, 0 warnings
-- [ ] Build solution in Release mode - must succeed with 0 errors, 0 warnings
-- [ ] Verify all project references are correctly set
+- [x] Build solution in Debug mode - must succeed with 0 errors, 0 warnings (passed on 2025-09-29)
+- [x] Build solution in Release mode - must succeed with 0 errors, 0 warnings (passed on 2025-09-29)
+- [x] Verify all project references are correctly set (App -> Core/UI/Diagnostics/OCR.*, CLI -> Core, UI/OCR.* -> Core)
 - [ ] Run `git status` - all files tracked, no untracked files except intended ignores
 - [ ] **STOP if any validation fails**
 
