@@ -3922,6 +3922,16 @@ Remember to:
   - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile <name>`
   - Output: `%TEMP%\HSGalaxy\profile_<name>_<yyyyMMdd_HHmmss>.png`
 
+- [x] ROI editor improvements (2025-09-29)
+  - Resize edges/corners by dragging near borders (6 DIP tolerance).
+  - Selection + keyboard nudging: arrows move; Shift=10px steps; Ctrl+arrows resize.
+  - Maintains PMv2 correctness when saving ROIs (absolute pixels).
+  - Files updated: `src/HSGalaxy.App/Calibration/RoiEditorOverlayWindow.xaml.cs`.
+
+- [x] DPI helper + tests (2025-09-29)
+  - `src/HSGalaxy.Core/Calibration/DpiHelper.cs` for DIP↔px conversions.
+  - Tests: `tests/HSGalaxy.Core.Tests/DpiHelperTests.cs` — PASS (4 tests).
+
 #### Validation (2025-09-29)
 
 - Build: `dotnet build HSGalaxyArena.sln -c Debug` — PASS (no errors).
@@ -3930,6 +3940,7 @@ Remember to:
   - Draw 3 ROIs across bottom bar; Save as profile name: `WizardProof`.
 - Proof capture: `dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile WizardProof`
   - Evidence path printed; manually verified image contains stacked ROI captures.
+ - Unit tests: `dotnet test tests/HSGalaxy.Core.Tests` — PASS (4 tests).
 
 #### DPI Checks (Per-Monitor-V2)
 - Performed on 100% (96), 125% (120), 150% (144): overlay matched target window bounds; ROI absolute pixels correct.
