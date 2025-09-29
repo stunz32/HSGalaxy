@@ -19,6 +19,7 @@ namespace HSGalaxy.UI.Native
 
         private const int SPI_GETWORKAREA = 0x0030;
         private const int WM_DPICHANGED = 0x02E0;
+        private const int WM_ACTIVATEAPP = 0x001C;
 
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         private const uint SWP_NOMOVE = 0x0002;
@@ -93,6 +94,10 @@ namespace HSGalaxy.UI.Native
             {
                 case WM_DPICHANGED:
                     PositionOverlayWindow();
+                    break;
+                case WM_ACTIVATEAPP:
+                    // Reassert topmost after task switching
+                    SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
                     break;
             }
             return DefWindowProcW(hWnd, msg, wParam, lParam);
@@ -178,4 +183,3 @@ namespace HSGalaxy.UI.Native
         #endregion
     }
 }
-

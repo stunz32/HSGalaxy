@@ -15,10 +15,14 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // Ensure app stays alive without a visible WPF window
+        this.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         // Create click-through overlay window at startup for validation (Task 2.1)
         _overlay = new NativeWindow();
         _overlay.CreateOverlayWindow();
         _overlay.PositionOverlayWindow();
+
+        // DirectComposition renderer is temporarily disabled during Validation 2.1
     }
 
     protected override void OnExit(ExitEventArgs e)
