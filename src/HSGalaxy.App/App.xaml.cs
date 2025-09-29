@@ -315,10 +315,11 @@ public partial class App : System.Windows.Application
         {
             if (_wizard == null || !_wizard.IsVisible)
             {
+                _overlay?.SetVisible(false);
                 _wizard = new CalibrationWizardWindow();
                 _wizard.Owner = null; // modeless
                 _wizard.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                _wizard.Closed += (_, __) => _wizard = null;
+                _wizard.Closed += (_, __) => { _wizard = null; _overlay?.SetVisible(true); };
                 _wizard.Show();
                 OverlayLogger.Log("Wizard", "Opened");
             }
@@ -340,12 +341,23 @@ public partial class App : System.Windows.Application
         try
         {
             string name = _settings?.CurrentProfile ?? string.Empty;
+            string folder = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
             if (string.IsNullOrWhiteSpace(name))
             {
-                OverlayLogger.Log("Calib.Capture", "No current profile set.");
-                return;
+                // Fallback to most-recent .json in calibration folder
+                try
+                {
+                    var dir = new System.IO.DirectoryInfo(folder);
+                    var mostRecent = dir.Exists ? dir.GetFiles("*.json").OrderByDescending(f => f.LastWriteTimeUtc).FirstOrDefault() : null;
+                    if (mostRecent != null) name = System.IO.Path.GetFileNameWithoutExtension(mostRecent.Name);
+                }
+                catch { }
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    OverlayLogger.Log("Calib.Capture", "No current profile set or found.");
+                    return;
+                }
             }
-            string folder = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
             var profile = await CalibrationManager.LoadAsync(folder, name);
             if (profile is null || profile.Regions.Count == 0)
             {

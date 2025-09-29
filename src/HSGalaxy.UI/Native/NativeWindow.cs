@@ -15,6 +15,7 @@ namespace HSGalaxy.UI.Native
         private const int WS_EX_LAYERED = 0x00080000;
 
         private const int SW_SHOW = 5;
+        private const int SW_HIDE = 0;
         private const uint LWA_ALPHA = 0x2;
         private const int ULW_ALPHA = 0x00000002;
         private const byte AC_SRC_OVER = 0x00;
@@ -92,6 +93,17 @@ namespace HSGalaxy.UI.Native
             // Debug: draw a faint per-pixel alpha tint so users can see the overlay
             TryApplyDebugTint(alpha: 90); // ~35% opacity
             return _hwnd;
+        }
+
+        public void SetVisible(bool visible)
+        {
+            if (_hwnd == IntPtr.Zero) return;
+            ShowWindow(_hwnd, visible ? SW_SHOW : SW_HIDE);
+            if (visible)
+            {
+                // Reassert topmost
+                SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+            }
         }
 
         public bool RegisterThemeHotKey()
