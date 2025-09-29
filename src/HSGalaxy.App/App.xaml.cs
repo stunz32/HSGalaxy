@@ -5,6 +5,7 @@ using HSGalaxy.UI.Native;
 using HSGalaxy.UI.Rendering;
 using System.Windows.Threading;
 using HSGalaxy.Diagnostics;
+using HSGalaxy.UI.Validation;
 
 namespace HSGalaxy.App;
 
@@ -91,13 +92,50 @@ public partial class App : Application
                 {
                     stripTimer.Stop();
                     OverlayLogger.Log("SelfTest.Strip", "end");
+                    // Mirror-view gate (approximate): capture the strip area and ensure no overlay pixels appear
+                    try
+                    {
+                        // Assume 32 DIP height ~ 32 px at 96 DPI
+                        var expected = new Vortice.Mathematics.Color4(0f, 0.6f, 0f, 1f);
+                        var expectedRgb = System.Drawing.Color.FromArgb((int)(expected.R * 255), (int)(expected.G * 255), (int)(expected.B * 255));
+                        GetOverlayClient(out int w, out int h);
+                        var rect = new System.Drawing.Rectangle(0, h - 32, w, 32);
+                        var passed = MirrorViewValidator.ValidateNoOverlayInCapture(rect, expectedRgb, requiredCleanFrames: 3, sampleStep: 6);
+                        OverlayLogger.Log("SelfTest.MirrorView", passed ? "Passed" : "Failed");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        OverlayLogger.Log("SelfTest.MirrorView.Error", ex.Message);
+                    }
                     return;
                 }
                 flip2 = !flip2;
                 _renderer?.DrawStatusStrip(new Vortice.Mathematics.Color4(0f, flip2 ? 0.6f : 0.2f, 0f, 1f));
+                // Text rendering temporarily disabled in placeholder
                 _renderer?.PresentIfDirty();
             };
             stripTimer.Start();
+        }
+
+        // Optional: idle guard self-test (HSGALAXY_IDLE_TEST=1)
+        var idleTest = Environment.GetEnvironmentVariable("HSGALAXY_IDLE_TEST");
+        if (string.Equals(idleTest, "1", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(stress, "1", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(stressStrip, "1", StringComparison.OrdinalIgnoreCase))
+        {
+            var startCount = _renderer!.PresentCount;
+            var idleTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromSeconds(5)
+            };
+            idleTimer.Tick += (_, __) =>
+            {
+                idleTimer.Stop();
+                var endCount = _renderer!.PresentCount;
+                var delta = endCount - startCount;
+                OverlayLogger.Log("SelfTest.IdleNoPresent", delta == 0 ? "pass" : $"fail delta={delta}");
+            };
+            idleTimer.Start();
         }
 
     }
@@ -110,5 +148,19 @@ public partial class App : Application
         _overlay?.Dispose();
         base.OnExit(e);
     }
+
+    private void GetOverlayClient(out int w, out int h)
+    {
+        w = h = 0;
+        if (_overlay is null) return;
+        // Use the same helper as renderer (GetClientRect)
+        var hwnd = _overlay.Handle;
+        GetClientRect(hwnd, out RECT rc);
+        w = rc.Right - rc.Left; h = rc.Bottom - rc.Top;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct RECT { public int Left, Top, Right, Bottom; }
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool GetClientRect(nint hWnd, out RECT lpRect);
 }
 

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -20,4 +20,9 @@
     <Folder Include="Config\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\HSGalaxy.OCR.Azure\HSGalaxy.OCR.Azure.csproj" />
+  </ItemGroup>
+
 </Project>
+

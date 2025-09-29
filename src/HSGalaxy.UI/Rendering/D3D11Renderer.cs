@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
@@ -34,6 +36,8 @@ namespace HSGalaxy.UI.Rendering
         private int _presentCount;
         private int _bufferCount = 2;
         private readonly Stopwatch _presentSw = new Stopwatch();
+
+        public int PresentCount => _presentCount;
 
         public void Initialize(IntPtr hwnd)
         {
@@ -196,5 +200,8 @@ namespace HSGalaxy.UI.Rendering
             _context1.ClearView(rtv, color, new[] { rect });
             _isDirty = true;
         }
+
+        // TODO: Text rendering will be added with a D2D/DirectWrite path to avoid complexities
+        // of subresource updates. Placeholder removed to keep builds clean.
     }
 }
