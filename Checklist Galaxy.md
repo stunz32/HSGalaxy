@@ -17,11 +17,11 @@
 ### Task 1.1: Repository and Solution Setup
 
 #### Subtasks:
-- [ ] confirm root directory at `D:\cursor_bots\HSGalaxy\`
-- [ ] Initialize Git repository with `.gitignore` for:
+- [x] confirm root directory at `D:\cursor bots\HSGalaxy\` — confirmed on 2025-09-29
+- [x] Initialize Git repository with `.gitignore` for: (completed in afbf7b721b4a on 2025-09-29)
   - `*.user`, `*.suo`, `.vs/`, `bin/`, `obj/`, `packages/`
   - `logs/`, `dumps/`, `backups/`, `*.log`, `*.dmp`
-- [ ] Create `.editorconfig` with:
+- [x] Create `.editorconfig` with: (completed in afbf7b721b4a on 2025-09-29)
   ```
   indent_style = space
   indent_size = 4
