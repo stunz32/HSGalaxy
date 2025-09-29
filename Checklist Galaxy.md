@@ -3922,6 +3922,11 @@ Remember to:
   - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile <name>`
   - Output: `%TEMP%\HSGalaxy\profile_<name>_<yyyyMMdd_HHmmss>.png`
 
+- [x] Hotkey capture (2025-09-29)
+  - App global hotkey `Ctrl+Alt+P` captures the current profile from settings and saves a composite to `%TEMP%\HSGalaxy\hotkey_<name>_<timestamp>.png`.
+  - Current profile is set when saving or loading in the wizard.
+  - Evidence: run app, load or save a profile via the wizard, then press `Ctrl+Alt+P`; path is logged via OverlayLogger.
+
 - [x] ROI editor improvements (2025-09-29)
   - Resize edges/corners by dragging near borders (6 DIP tolerance).
   - Selection + keyboard nudging: arrows move; Shift=10px steps; Ctrl+arrows resize.
