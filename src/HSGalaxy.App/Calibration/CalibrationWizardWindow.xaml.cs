@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using HSGalaxy.Core.Calibration;
+using HSGalaxy.Core.Config;
 using HSGalaxy.UI.Capture;
 
 namespace HSGalaxy.App.Calibration;
@@ -85,6 +86,7 @@ public partial class CalibrationWizardWindow : Window
         profile.Regions.AddRange(_overlay.GetRois());
         string folder = GetCalibrationFolder();
         await CalibrationManager.SaveAsync(profile, folder);
+        await SaveCurrentProfileNameAsync(name);
         SetStatus($"Saved profile '{name}' to {folder}");
     }
 
@@ -100,6 +102,7 @@ public partial class CalibrationWizardWindow : Window
         }
         EnsureOverlay();
         _overlay!.SetRois(profile.Regions);
+        await SaveCurrentProfileNameAsync(name);
         SetStatus($"Loaded profile '{name}'.");
     }
 
@@ -149,6 +152,21 @@ public partial class CalibrationWizardWindow : Window
         var env = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR");
         if (!string.IsNullOrWhiteSpace(env)) return env!;
         return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+    }
+
+    private static async Task SaveCurrentProfileNameAsync(string name)
+    {
+        try
+        {
+            var cfgFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "config");
+            Directory.CreateDirectory(cfgFolder);
+            var cfgPath = Path.Combine(cfgFolder, "appsettings.json");
+            var store = new JsonConfigStore<AppSettings>(cfgPath);
+            var settings = await store.LoadAsync();
+            settings.CurrentProfile = name;
+            await store.SaveAsync(settings);
+        }
+        catch { }
     }
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)

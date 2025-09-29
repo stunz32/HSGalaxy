@@ -23,6 +23,7 @@ namespace HSGalaxy.UI.Native
         private const int SPI_GETWORKAREA = 0x0030;
         private const int WM_DPICHANGED = 0x02E0;
         private const int WM_ACTIVATEAPP = 0x001C;
+        private const int WM_HOTKEY = 0x0312;
 
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         private const uint SWP_NOMOVE = 0x0002;
@@ -38,6 +39,16 @@ namespace HSGalaxy.UI.Native
         private IntPtr _hwnd;
 
         public IntPtr Handle => _hwnd;
+
+        private const int MOD_ALT = 0x0001;
+        private const int MOD_CONTROL = 0x0002;
+        private const int VK_T = 0x54;
+        private const int VK_P = 0x50;
+        private const int HOTKEY_ID_THEME = 0xA11E; // arbitrary unique id
+        private const int HOTKEY_ID_CAPTURE = 0xA11F;
+
+        public event EventHandler? ThemeHotkeyPressed;
+        public event EventHandler? CaptureHotkeyPressed;
 
         /// <summary>
         /// Creates and shows the overlay window.
@@ -80,6 +91,20 @@ namespace HSGalaxy.UI.Native
             return _hwnd;
         }
 
+        public bool RegisterThemeHotKey()
+        {
+            if (_hwnd == IntPtr.Zero) return false;
+            // Ctrl + Alt + T
+            return RegisterHotKey(_hwnd, HOTKEY_ID_THEME, MOD_CONTROL | MOD_ALT, VK_T);
+        }
+
+        public bool RegisterCaptureHotKey()
+        {
+            if (_hwnd == IntPtr.Zero) return false;
+            // Ctrl + Alt + P
+            return RegisterHotKey(_hwnd, HOTKEY_ID_CAPTURE, MOD_CONTROL | MOD_ALT, VK_P);
+        }
+
         /// <summary>
         /// Positions the overlay to the primary monitor work area with DPI awareness.
         /// </summary>
@@ -109,6 +134,10 @@ namespace HSGalaxy.UI.Native
                     // Reassert topmost after task switching and reapply tint
                     SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
                     // TryApplyDebugTint(alpha: 200); // disabled in normal runs
+                    break;
+                case WM_HOTKEY:
+                    if (wParam == (IntPtr)HOTKEY_ID_THEME) { ThemeHotkeyPressed?.Invoke(this, EventArgs.Empty); return IntPtr.Zero; }
+                    if (wParam == (IntPtr)HOTKEY_ID_CAPTURE) { CaptureHotkeyPressed?.Invoke(this, EventArgs.Empty); return IntPtr.Zero; }
                     break;
             }
             return DefWindowProcW(hWnd, msg, wParam, lParam);
@@ -189,12 +218,14 @@ namespace HSGalaxy.UI.Native
         {
             if (_hwnd != IntPtr.Zero)
             {
-                DestroyWindow(_hwnd);
+                try { UnregisterHotKey(_hwnd, HOTKEY_ID_THEME); } catch { }
+                try { UnregisterHotKey(_hwnd, HOTKEY_ID_CAPTURE); } catch { }
+                try { DestroyWindow(_hwnd); } catch { }
                 _hwnd = IntPtr.Zero;
             }
             if (_classAtom != 0)
             {
-                UnregisterClassW("HSGalaxyOverlayWindow", GetModuleHandle(null));
+                try { UnregisterClassW("HSGalaxyOverlayWindow", GetModuleHandle(null)); } catch { }
                 _classAtom = 0;
             }
             _wndProc = null;
@@ -264,6 +295,10 @@ namespace HSGalaxy.UI.Native
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool UnregisterClassW(string lpClassName, IntPtr hInstance);
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
         [StructLayout(LayoutKind.Sequential)]
         private struct POINT { public int x; public int y; }
@@ -314,5 +349,7 @@ namespace HSGalaxy.UI.Native
             if (GetWindowDisplayAffinity(_hwnd, out uint a)) return a;
             return 0;
         }
+
+        
     }
 }
