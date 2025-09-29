@@ -18,9 +18,16 @@ public partial class RoiEditorOverlayWindow : Window
     private DpiScale _dpi;
     private bool _draggingNew = false;
     private bool _draggingMove = false;
+    private bool _draggingResize = false;
     private Point _start;
     private Rectangle? _currentRect;
     private Rectangle? _hitRect;
+    private Rectangle? _selectedRect;
+    private ResizeMode _resizeMode = ResizeMode.None;
+    private const double Grip = 6.0; // DIP tolerance for edge hit tests
+
+    [Flags]
+    private enum ResizeMode { None=0, Left=1, Top=2, Right=4, Bottom=8 }
 
     public RoiEditorOverlayWindow(HSGalaxy.UI.Capture.WindowPicker.WindowInfo target)
     {
@@ -49,6 +56,7 @@ public partial class RoiEditorOverlayWindow : Window
         var keep = CanvasRoot.Children.OfType<UIElement>().Where(c => c is not Rectangle).ToList();
         CanvasRoot.Children.Clear();
         foreach (var k in keep) CanvasRoot.Children.Add(k);
+        _selectedRect = null;
     }
 
     public List<Roi> GetRois()
@@ -108,7 +116,16 @@ public partial class RoiEditorOverlayWindow : Window
         _hitRect = HitTest(_start);
         if (_hitRect != null)
         {
-            _draggingMove = true;
+            _selectedRect = _hitRect;
+            _resizeMode = GetResizeMode(_hitRect, _start);
+            if (_resizeMode != ResizeMode.None)
+            {
+                _draggingResize = true;
+            }
+            else
+            {
+                _draggingMove = true;
+            }
             CanvasRoot.CaptureMouse();
             e.Handled = true;
             return;
@@ -143,8 +160,12 @@ public partial class RoiEditorOverlayWindow : Window
         {
             double dx = p.X - _start.X;
             double dy = p.Y - _start.Y;
-            Canvas.SetLeft(_hitRect, Math.Max(0, Canvas.GetLeft(_hitRect) + dx));
-            Canvas.SetTop(_hitRect, Math.Max(0, Canvas.GetTop(_hitRect) + dy));
+            MoveRect(_hitRect, dx, dy);
+            _start = p;
+        }
+        else if (_draggingResize && _hitRect != null)
+        {
+            ResizeRect(_hitRect, p);
             _start = p;
         }
     }
@@ -155,6 +176,8 @@ public partial class RoiEditorOverlayWindow : Window
         _draggingMove = false;
         _currentRect = null;
         _hitRect = null;
+        _draggingResize = false;
+        _resizeMode = ResizeMode.None;
         Mouse.Capture(null);
     }
 
@@ -163,8 +186,31 @@ public partial class RoiEditorOverlayWindow : Window
         if (e.Key == Key.Delete)
         {
             // Remove last rectangle
-            var last = CanvasRoot.Children.OfType<Rectangle>().LastOrDefault();
-            if (last != null) CanvasRoot.Children.Remove(last);
+            var last = _selectedRect ?? CanvasRoot.Children.OfType<Rectangle>().LastOrDefault();
+            if (last != null)
+            {
+                CanvasRoot.Children.Remove(last);
+                if (_selectedRect == last) _selectedRect = null;
+            }
+            return;
+        }
+
+        // Keyboard nudging and resizing
+        if (_selectedRect != null)
+        {
+            int step = (Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift)) ? 10 : 1;
+            if (e.Key == Key.Left) { MoveRect(_selectedRect, -step, 0); e.Handled = true; }
+            else if (e.Key == Key.Right) { MoveRect(_selectedRect, step, 0); e.Handled = true; }
+            else if (e.Key == Key.Up) { MoveRect(_selectedRect, 0, -step); e.Handled = true; }
+            else if (e.Key == Key.Down) { MoveRect(_selectedRect, 0, step); e.Handled = true; }
+            else if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            {
+                // Ctrl + arrows resize from bottom/right edges
+                if (e.Key == Key.Left) { _selectedRect.Width = Math.Max(1, _selectedRect.Width - step); e.Handled = true; }
+                else if (e.Key == Key.Right) { _selectedRect.Width = Math.Max(1, _selectedRect.Width + step); e.Handled = true; }
+                else if (e.Key == Key.Up) { _selectedRect.Height = Math.Max(1, _selectedRect.Height - step); e.Handled = true; }
+                else if (e.Key == Key.Down) { _selectedRect.Height = Math.Max(1, _selectedRect.Height + step); e.Handled = true; }
+            }
         }
     }
 
@@ -178,5 +224,67 @@ public partial class RoiEditorOverlayWindow : Window
                 return r;
         }
         return null;
+    }
+
+    private ResizeMode GetResizeMode(Rectangle r, Point p)
+    {
+        double x = Canvas.GetLeft(r);
+        double y = Canvas.GetTop(r);
+        double l = x, t = y, rt = x + r.Width, bt = y + r.Height;
+        ResizeMode mode = ResizeMode.None;
+        if (Math.Abs(p.X - l) <= Grip) mode |= ResizeMode.Left;
+        if (Math.Abs(p.X - rt) <= Grip) mode |= ResizeMode.Right;
+        if (Math.Abs(p.Y - t) <= Grip) mode |= ResizeMode.Top;
+        if (Math.Abs(p.Y - bt) <= Grip) mode |= ResizeMode.Bottom;
+        return mode;
+    }
+
+    private void MoveRect(Rectangle rect, double dx, double dy)
+    {
+        double nx = Math.Max(0, Canvas.GetLeft(rect) + dx);
+        double ny = Math.Max(0, Canvas.GetTop(rect) + dy);
+        nx = Math.Min(nx, Math.Max(0, CanvasRoot.Width - rect.Width));
+        ny = Math.Min(ny, Math.Max(0, CanvasRoot.Height - rect.Height));
+        Canvas.SetLeft(rect, nx);
+        Canvas.SetTop(rect, ny);
+    }
+
+    private void ResizeRect(Rectangle rect, Point cursor)
+    {
+        double x = Canvas.GetLeft(rect);
+        double y = Canvas.GetTop(rect);
+        double w = rect.Width;
+        double h = rect.Height;
+        double nx = x, ny = y, nw = w, nh = h;
+
+        if (_resizeMode.HasFlag(ResizeMode.Left))
+        {
+            nx = Math.Min(cursor.X, x + w - 1);
+            nw = (x + w) - nx;
+        }
+        if (_resizeMode.HasFlag(ResizeMode.Right))
+        {
+            nw = Math.Max(1, cursor.X - x);
+        }
+        if (_resizeMode.HasFlag(ResizeMode.Top))
+        {
+            ny = Math.Min(cursor.Y, y + h - 1);
+            nh = (y + h) - ny;
+        }
+        if (_resizeMode.HasFlag(ResizeMode.Bottom))
+        {
+            nh = Math.Max(1, cursor.Y - y);
+        }
+
+        // Clamp to canvas
+        nx = Math.Max(0, nx);
+        ny = Math.Max(0, ny);
+        nw = Math.Min(nw, CanvasRoot.Width - nx);
+        nh = Math.Min(nh, CanvasRoot.Height - ny);
+
+        Canvas.SetLeft(rect, nx);
+        Canvas.SetTop(rect, ny);
+        rect.Width = Math.Max(1, nw);
+        rect.Height = Math.Max(1, nh);
     }
 }
