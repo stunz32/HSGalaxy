@@ -115,7 +115,7 @@
 ### Task 1.3: Data Root and Storage System
 
 #### Subtasks:
-- [ ] Create `StorageManager.cs` in Core project:
+- [x] Create `StorageManager.cs` in Core project: (completed on 2025-09-29)
   ```csharp
   /// <summary>
   /// Manages all file system operations and data root paths
@@ -128,7 +128,7 @@
       // Methods: EnsureDirectories(), GetConfigPath(), GetLogPath(), etc.
   }
   ```
-- [ ] Implement directory structure creation:
+- [x] Implement directory structure creation:
   - `D:\cursor_bots\HSGalaxy\config\` - Configuration files
   - `D:\cursor_bots\HSGalaxy\calibration\` - Window calibration profiles
   - `D:\cursor_bots\HSGalaxy\dict\` - SymSpell dictionaries
@@ -136,7 +136,7 @@
   - `D:\cursor_bots\HSGalaxy\logs\` - Application logs
   - `D:\cursor_bots\HSGalaxy\dumps\` - Crash dumps
   - `D:\cursor_bots\HSGalaxy\backups\` - Auto backups
-- [ ] Implement fallback logic:
+- [x] Implement fallback logic:
   ```csharp
   /// <summary>
   /// Checks if primary data root is available with sufficient space (1GB minimum)
@@ -145,7 +145,7 @@
   /// </summary>
   private bool TryUsePrimaryDataRoot()
   ```
-- [ ] Create `IStorageEvents` interface for notifications:
+- [x] Create `IStorageEvents` interface for notifications:
   ```csharp
   public interface IStorageEvents
   {
@@ -153,8 +153,8 @@
       event EventHandler<LowDiskSpaceEventArgs> LowDiskSpace;
   }
   ```
-- [ ] Implement disk space monitoring (check every 5 minutes)
-- [ ] Add configuration file handler with JSON serialization
+- [x] Implement disk space monitoring (check every 5 minutes)
+- [x] Add configuration file handler with JSON serialization (JsonConfigStore<T>)
 
 #### Validation Gate 1.3:
 - [ ] Run with D:\ available - verify all directories created
