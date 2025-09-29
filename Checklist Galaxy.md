@@ -1,9 +1,9 @@
-
+﻿
 
 # Hearthstone Arena Draft Assistant - AI Implementation Checklist
 
 ## IMPORTANT INSTRUCTIONS FOR THE AI
-- **Track Progress**: After completing each task, mark it as `[✓]` in this checklist
+- **Track Progress**: After completing each task, mark it as `[âœ“]` in this checklist
 - **Document Everything**: Write comprehensive comments explaining WHAT, WHY, and HOW for every function/class
 - **Test Continuously**: Never proceed to next phase without passing ALL validation gates
 - **Save State**: After each major section, save the current state of the project
@@ -17,7 +17,7 @@
 ### Task 1.1: Repository and Solution Setup
 
 #### Subtasks:
-- [x] confirm root directory at `D:\cursor bots\HSGalaxy\` — confirmed on 2025-09-29
+- [x] confirm root directory at `D:\cursor bots\HSGalaxy\` â€” confirmed on 2025-09-29
 - [x] Initialize Git repository with `.gitignore` for: (completed in afbf7b721b4a on 2025-09-29)
   - `*.user`, `*.suo`, `.vs/`, `bin/`, `obj/`, `packages/`
   - `logs/`, `dumps/`, `backups/`, `*.log`, `*.dmp`
@@ -102,7 +102,7 @@
   [assembly: AssemblyConfiguration("")]
   [assembly: AssemblyCompany("HSGalaxy")]
   [assembly: AssemblyProduct("HSGalaxy Arena Assistant")]
-  [assembly: AssemblyCopyright("Copyright © 2024")]
+  [assembly: AssemblyCopyright("Copyright Â© 2024")]
   [assembly: AssemblyVersion("0.1.0.0")]
   [assembly: AssemblyFileVersion("0.1.0.0")]
   ```
@@ -291,23 +291,23 @@
   ```
 
 #### Validation Gate 2.2:
-- [x] D3D11 device created successfully (Vortice; FL 11_0+) — 2025-09-29
-- [x] Swapchain created and bound to window (logged Swapchain.Created; AlphaMode=Premultiplied) — 2025-09-29
+- [x] D3D11 device created successfully (Vortice; FL 11_0+) â€” 2025-09-29
+- [x] Swapchain created and bound to window (logged Swapchain.Created; AlphaMode=Premultiplied) â€” 2025-09-29
 - [ ] Clear swapchain to semi-transparent blue - verify transparency (optional; skipped)
-- [x] Idle presents = 0 for 5s after stress (validated via overlay.log) — 2025-09-29
-- [x] Buffer count is 2 initially (logged BufferCount=2) — 2025-09-29
+- [x] Idle presents = 0 for 5s after stress (validated via overlay.log) â€” 2025-09-29
+- [x] Buffer count is 2 initially (logged BufferCount=2) â€” 2025-09-29
 - [x] **PASS**
 
 ### Task 2.3: Status Strip Implementation
 
 #### Subtasks:
-- [x] Create `StatusStrip.cs` UI component (properties scaffold) � 2025-09-29
+- [x] Create `StatusStrip.cs` UI component (properties scaffold) — 2025-09-29
   - Fields: Status, Endpoint, Region, Latency, P50, P95, Mode; Theme-bound `Background`/`Foreground`; `HeightDip=32`.
-- [x] Implement text rendering (interim): CPU GDI text ? dynamic BGRA8 texture blit; DPI-aware via `GetDpiForWindow`; ClearType on; integer-aligned layout for crispness � 2025-09-29
-- [x] Create text layout for first-line metrics (Status | Endpoint | Region | Latency | P50 | P95 | Mode | Presents | dt | DPI) � 2025-09-29
-- [x] Implement theme colors + manager � 2025-09-29
+- [x] Implement text rendering (interim): CPU GDI text ? dynamic BGRA8 texture blit; DPI-aware via `GetDpiForWindow`; ClearType on; integer-aligned layout for crispness — 2025-09-29
+- [x] Create text layout for first-line metrics (Status | Endpoint | Region | Latency | P50 | P95 | Mode | Presents | dt | DPI) — 2025-09-29
+- [x] Implement theme colors + manager — 2025-09-29
   - `ThemeColors` (Light/Dark/Safe) and `ThemeManager` with `HSGALAXY_THEME` and hotkey cycle (Ctrl+Alt+T).
-- [x] Add DPI override for harness (`HSGALAXY_DPI_OVERRIDE`) and CLI renderer (`strip:render [dpi] [theme]`) � 2025-09-29
+- [x] Add DPI override for harness (`HSGALAXY_DPI_OVERRIDE`) and CLI renderer (`strip:render [dpi] [theme]`) — 2025-09-29
 
 Key files:
 - `src/HSGalaxy.UI/Rendering/StatusStrip.cs`
@@ -317,10 +317,10 @@ Key files:
 - `src/HSGalaxy.CLI/Program.cs` (strip:render harness)
 
 - [x] Status strip renders at bottom of screen (opaque band via D3D11 ClearView)
-- [x] Text renders and updates with presents/dt; DPI scaling reported in text (DPI=###) � 2025-09-29
- - [x] Text crisp at 125% and 150% DPI � 2025-09-29 (see proof PNGs below in Task 2.3 Gate)
- - [x] Theme switching works instantly � 2025-09-29 (Ctrl+Alt+T / HSGALAXY_THEME)
-- [x] Measure render time - typically < 2ms (see OverlayRender.Present dtMs) � 2025-09-29
+- [x] Text renders and updates with presents/dt; DPI scaling reported in text (DPI=###) — 2025-09-29
+ - [x] Text crisp at 125% and 150% DPI — 2025-09-29 (see proof PNGs below in Task 2.3 Gate)
+ - [x] Theme switching works instantly — 2025-09-29 (Ctrl+Alt+T / HSGALAXY_THEME)
+- [x] Measure render time - typically < 2ms (see OverlayRender.Present dtMs) — 2025-09-29
  - [x] **PASS**
 
 ---
@@ -345,8 +345,8 @@ Key files:
       - Output (2025-09-29): `Baseline FPS: 24.0 (PASS)`, `Minimized FPS: 0.0 (PASS)`, `Restored FPS: 26.0 (PASS)`, `WGC validate: PASS`.
   - [x] Validation Gate 3.1: PASS on 2025-09-29 (see overlay.log: `SelfTest.MirrorView Passed`).
   - [x] Validation Gate 3.2:
-    - [x] Can select and capture a window (surrogate for Hearthstone): PASS on 2025-09-29 � see CLI evidence above.
-    - [x] Frames arrive at expected rate (>=20 fps): PASS � 28.0 fps measured.
+    - [x] Can select and capture a window (surrogate for Hearthstone): PASS on 2025-09-29 — see CLI evidence above.
+    - [x] Frames arrive at expected rate (>=20 fps): PASS — 28.0 fps measured.
     - [x] Minimize window - capture stops (validated via `wgc:validate`): PASS on 2025-09-29
     - [x] Restore window - capture resumes automatically (validated via `wgc:validate`): PASS on 2025-09-29
     - [ ] Close captured window - graceful handling (optional; guarded via `wgc:validate <query> --close`)
@@ -539,8 +539,8 @@ Key files:
 - [ ] Wizard UI and on-screen ROI editor: pending (will come in UI tooling phase). Structures and persistence are in place.
 - [x] Validation Gate (persistence): PASS on 2025-09-29.
 
-### Task 4.2: Composite Image Builder � Status (2025-09-29)
-- [x] Implemented `CompositeBuilder` with 16px gutters and 1px separators (horizontal layout) � `src/HSGalaxy.Core/OCR/CompositeBuilder.cs`.
+### Task 4.2: Composite Image Builder — Status (2025-09-29)
+- [x] Implemented `CompositeBuilder` with 16px gutters and 1px separators (horizontal layout) — `src/HSGalaxy.Core/OCR/CompositeBuilder.cs`.
 - [x] Encoding policy: PNG first (<150KB), else JPEG quality 90 (<300KB) then 80.
 - [x] Offset table returned; `OcrPipeline` now maps OCR lines back to ROI index via center-point inside offset rectangles.
 - [x] Integrated into pipeline: `OcrPipeline.RunOnceAsync` uses `CompositeBuilder` and mapping.
@@ -887,7 +887,7 @@ Key files:
       
       /// <summary>
       /// Polls for operation completion
-      /// Max 13 attempts with 150ms delays (≈2s total)
+      /// Max 13 attempts with 150ms delays (â‰ˆ2s total)
       /// </summary>
       public async Task<OCRResult> GetReadResultAsync(string operationUrl)
   }
@@ -1088,8 +1088,8 @@ Key files:
       
       /// <summary>
       /// Resolves OCR text to card with confidence
-      /// Requires OCR confidence ≥ 0.70 before fuzzy matching
-      /// Edit distance ≤1 for names ≤10 chars, ≤2 otherwise
+      /// Requires OCR confidence â‰¥ 0.70 before fuzzy matching
+      /// Edit distance â‰¤1 for names â‰¤10 chars, â‰¤2 otherwise
       /// </summary>
       public ResolveResult Resolve(string ocrText, float ocrConfidence, string playerClass)
   }
@@ -1284,7 +1284,7 @@ Key files:
   ```csharp
   /// <summary>
   /// Compares ledger with deck panel OCR
-  /// Only trusts panel at high confidence (≥0.9)
+  /// Only trusts panel at high confidence (â‰¥0.9)
   /// Flags discrepancies for user review
   /// </summary>
   public ReconcileResult ReconcileWithPanel(List<Card> panelCards)
@@ -1401,7 +1401,7 @@ Key files:
 - [ ] Card information displays correctly
 - [ ] Recommended card has green highlight
 - [ ] Low confidence cards show warning color
-- [ ] Animations complete in ≤ 120ms
+- [ ] Animations complete in â‰¤ 120ms
 - [ ] **STOP if any validation fails**
 
 ### Task 8.2: Recommendation Chip
@@ -1487,7 +1487,7 @@ Key files:
       {
           foreach (var reason in _data.SecondaryReasons)
           {
-              DrawText(target, $"• {reason}", reasonRect, 12, fgColor);
+              DrawText(target, $"â€¢ {reason}", reasonRect, 12, fgColor);
               reasonRect.Y += 16;
           }
       }
@@ -2003,10 +2003,10 @@ Key files:
           Title = "Quick Tips",
           Items = new List<HelpItem>
           {
-              new() { Key = "", Description = "• Recalibrate if cards aren't detected" },
-              new() { Key = "", Description = "• Safe Mode ensures text readability" },
-              new() { Key = "", Description = "• Check logs in Diagnostics for issues" },
-              new() { Key = "", Description = "• Offline mode uses local OCR" }
+              new() { Key = "", Description = "â€¢ Recalibrate if cards aren't detected" },
+              new() { Key = "", Description = "â€¢ Safe Mode ensures text readability" },
+              new() { Key = "", Description = "â€¢ Check logs in Diagnostics for issues" },
+              new() { Key = "", Description = "â€¢ Offline mode uses local OCR" }
           }
       });
   }
@@ -2650,8 +2650,8 @@ Key files:
 - [ ] Test runner processes entire corpus
 - [ ] Metrics calculate correctly
 - [ ] HTML report generates and opens
-- [ ] P50 ≤ 300ms on test corpus
-- [ ] P95 ≤ 600ms on test corpus
+- [ ] P50 â‰¤ 300ms on test corpus
+- [ ] P95 â‰¤ 600ms on test corpus
 - [ ] **STOP if any validation fails**
 
 ### Task 11.2: Test Corpus Preparation
@@ -2748,8 +2748,8 @@ Key files:
   ```
 
 #### Validation Gate 11.2:
-- [ ] Corpus has ≥500 total test cases
-- [ ] Each DPI/theme combo has ≥50 cases
+- [ ] Corpus has â‰¥500 total test cases
+- [ ] Each DPI/theme combo has â‰¥50 cases
 - [ ] All 10 classes represented
 - [ ] Corpus manifest valid JSON
 - [ ] All referenced images exist
@@ -3280,8 +3280,8 @@ Key files:
   ```
 
 #### Validation Gate 13.2:
-- [ ] P50 latency ≤ 250ms (target 300ms)
-- [ ] P95 latency ≤ 500ms (target 600ms)
+- [ ] P50 latency â‰¤ 250ms (target 300ms)
+- [ ] P95 latency â‰¤ 500ms (target 600ms)
 - [ ] Memory usage < 200MB typical
 - [ ] No allocations in render loop
 - [ ] GC Gen2 collections < 1/minute
@@ -3319,7 +3319,7 @@ Key files:
   ## Initial Setup
   ### Azure OCR Configuration
   1. Obtain Azure Computer Vision API key
-  2. Open Settings → OCR tab
+  2. Open Settings â†’ OCR tab
   3. Enter your API key
   4. Select your preferred region (West US recommended)
   5. Click "Test Connection" to verify
@@ -3399,15 +3399,15 @@ Key files:
   Released: [DATE]
   
   ### Features
-  - ✅ Windows 11 overlay with click-through support
-  - ✅ Windows Graphics Capture integration
-  - ✅ Azure Computer Vision OCR (v4 primary, v3.2 fallback)
-  - ✅ Local OCR fallback for offline mode
-  - ✅ Card name resolution with fuzzy matching
-  - ✅ Tier-based recommendations with synergy detection
-  - ✅ Three-theme support (Light/Dark/Safe)
-  - ✅ Calibration wizard for easy setup
-  - ✅ Comprehensive diagnostics and logging
+  - âœ… Windows 11 overlay with click-through support
+  - âœ… Windows Graphics Capture integration
+  - âœ… Azure Computer Vision OCR (v4 primary, v3.2 fallback)
+  - âœ… Local OCR fallback for offline mode
+  - âœ… Card name resolution with fuzzy matching
+  - âœ… Tier-based recommendations with synergy detection
+  - âœ… Three-theme support (Light/Dark/Safe)
+  - âœ… Calibration wizard for easy setup
+  - âœ… Comprehensive diagnostics and logging
   
   ### Known Limitations
   - English (US) only in this release
@@ -3447,7 +3447,7 @@ Key files:
   $report = Get-Content .\release_validation.html
   # Parse and verify metrics meet criteria
   
-  Write-Host "✅ Release validation PASSED" -ForegroundColor Green
+  Write-Host "âœ… Release validation PASSED" -ForegroundColor Green
   ```
 
 #### Validation Gate 13.4:
@@ -3701,19 +3701,19 @@ Key files:
   Write-Host "[1/10] Validating build..." -ForegroundColor Yellow
   MSBuild.exe .\HSGalaxyArena.sln /p:Configuration=Release /t:Rebuild
   if ($LASTEXITCODE -ne 0) { throw "Build failed" }
-  Write-Host "✅ Build successful" -ForegroundColor Green
+  Write-Host "âœ… Build successful" -ForegroundColor Green
   
   # 2. Unit tests
   Write-Host "[2/10] Running unit tests..." -ForegroundColor Yellow
   dotnet test --no-build --configuration Release
   if ($LASTEXITCODE -ne 0) { throw "Unit tests failed" }
-  Write-Host "✅ All unit tests passed" -ForegroundColor Green
+  Write-Host "âœ… All unit tests passed" -ForegroundColor Green
   
   # 3. Integration tests
   Write-Host "[3/10] Running integration tests..." -ForegroundColor Yellow
   .\bin\Release\HSGalaxy.CLI.exe test --integration
   if ($LASTEXITCODE -ne 0) { throw "Integration tests failed" }
-  Write-Host "✅ Integration tests passed" -ForegroundColor Green
+  Write-Host "âœ… Integration tests passed" -ForegroundColor Green
   
   # 4. Benchmark validation
   Write-Host "[4/10] Running performance benchmarks..." -ForegroundColor Yellow
@@ -3723,7 +3723,7 @@ Key files:
   $results = Get-Content .\final_validation.html | Select-String -Pattern "P95 Latency: (\d+)ms"
   $p95 = [int]$results.Matches[0].Groups[1].Value
   if ($p95 -gt 600) { throw "P95 latency $p95ms exceeds 600ms target" }
-  Write-Host "✅ Performance targets met (P95: ${p95}ms)" -ForegroundColor Green
+  Write-Host "âœ… Performance targets met (P95: ${p95}ms)" -ForegroundColor Green
   
   # 5. Memory leak check
   Write-Host "[5/10] Checking for memory leaks..." -ForegroundColor Yellow
@@ -3743,7 +3743,7 @@ Key files:
   if (($finalMemory - $initialMemory) -gt 50) {
       throw "Possible memory leak detected"
   }
-  Write-Host "✅ No memory leaks detected" -ForegroundColor Green
+  Write-Host "âœ… No memory leaks detected" -ForegroundColor Green
   
   # 6. Code signing validation
   Write-Host "[6/10] Validating code signatures..." -ForegroundColor Yellow
@@ -3752,7 +3752,7 @@ Key files:
   if ($unsigned.Count -gt 0) {
       throw "$($unsigned.Count) unsigned binaries found"
   }
-  Write-Host "✅ All binaries properly signed" -ForegroundColor Green
+  Write-Host "âœ… All binaries properly signed" -ForegroundColor Green
   
   # 7. Manifest validation
   Write-Host "[7/10] Validating application manifest..." -ForegroundColor Yellow
@@ -3760,7 +3760,7 @@ Key files:
   if ($manifest.assembly.application.windowsSettings.dpiAwareness -ne "PerMonitorV2") {
       throw "DPI awareness not configured correctly"
   }
-  Write-Host "✅ Manifest configured correctly" -ForegroundColor Green
+  Write-Host "âœ… Manifest configured correctly" -ForegroundColor Green
   
   # 8. Package validation
   Write-Host "[8/10] Creating and validating package..." -ForegroundColor Yellow
@@ -3775,7 +3775,7 @@ Key files:
       throw "Package missing main executable"
   }
   Remove-Item $testExtract -Recurse -Force
-  Write-Host "✅ Package created successfully" -ForegroundColor Green
+  Write-Host "âœ… Package created successfully" -ForegroundColor Green
   
   # 9. Documentation check
   Write-Host "[9/10] Validating documentation..." -ForegroundColor Yellow
@@ -3785,18 +3785,18 @@ Key files:
           throw "Missing required documentation: $doc"
       }
   }
-  Write-Host "✅ All documentation present" -ForegroundColor Green
+  Write-Host "âœ… All documentation present" -ForegroundColor Green
   
   # 10. Final criteria check
   Write-Host "[10/10] Validating success criteria..." -ForegroundColor Yellow
-  Write-Host "  ✓ P50 latency ≤ 300ms" -ForegroundColor Gray
-  Write-Host "  ✓ P95 latency ≤ 600ms" -ForegroundColor Gray
-  Write-Host "  ✓ False-ID rate ≤ 0.5%" -ForegroundColor Gray
-  Write-Host "  ✓ Ambiguity rate ≤ 1.0%" -ForegroundColor Gray
-  Write-Host "  ✓ Unrecognized rate ≤ 0.5%" -ForegroundColor Gray
-  Write-Host "  ✓ Mirror View gate functional" -ForegroundColor Gray
-  Write-Host "  ✓ WCAG 2.1 AA compliance" -ForegroundColor Gray
-  Write-Host "✅ All success criteria met" -ForegroundColor Green
+  Write-Host "  âœ“ P50 latency â‰¤ 300ms" -ForegroundColor Gray
+  Write-Host "  âœ“ P95 latency â‰¤ 600ms" -ForegroundColor Gray
+  Write-Host "  âœ“ False-ID rate â‰¤ 0.5%" -ForegroundColor Gray
+  Write-Host "  âœ“ Ambiguity rate â‰¤ 1.0%" -ForegroundColor Gray
+  Write-Host "  âœ“ Unrecognized rate â‰¤ 0.5%" -ForegroundColor Gray
+  Write-Host "  âœ“ Mirror View gate functional" -ForegroundColor Gray
+  Write-Host "  âœ“ WCAG 2.1 AA compliance" -ForegroundColor Gray
+  Write-Host "âœ… All success criteria met" -ForegroundColor Green
   
   Write-Host ""
   Write-Host "========================================" -ForegroundColor Cyan
@@ -3820,21 +3820,21 @@ Key files:
 ## COMPLETION CHECKLIST
 
 ### Summary Status:
-- [ ] Phase 1: Project Bootstrap ✓
-- [ ] Phase 2: Overlay Window ✓
-- [ ] Phase 3: Window Capture ✓
-- [ ] Phase 4: Calibration ✓
-- [ ] Phase 5: OCR Pipeline ✓
-- [ ] Phase 6: Resolution & Data ✓
-- [ ] Phase 7: Recommendation Engine ✓
-- [ ] Phase 8: Overlay UI ✓
-- [ ] Phase 9: Settings & Config ✓
-- [ ] Phase 10: Diagnostics ✓
-- [ ] Phase 11: Validation & Testing ✓
-- [ ] Phase 12: Packaging ✓
-- [ ] Phase 13: Release Prep ✓
-- [ ] Phase 14: Post-Release Ops ✓
-- [ ] Phase 15: Final Validation ✓
+- [ ] Phase 1: Project Bootstrap âœ“
+- [ ] Phase 2: Overlay Window âœ“
+- [ ] Phase 3: Window Capture âœ“
+- [ ] Phase 4: Calibration âœ“
+- [ ] Phase 5: OCR Pipeline âœ“
+- [ ] Phase 6: Resolution & Data âœ“
+- [ ] Phase 7: Recommendation Engine âœ“
+- [ ] Phase 8: Overlay UI âœ“
+- [ ] Phase 9: Settings & Config âœ“
+- [ ] Phase 10: Diagnostics âœ“
+- [ ] Phase 11: Validation & Testing âœ“
+- [ ] Phase 12: Packaging âœ“
+- [ ] Phase 13: Release Prep âœ“
+- [ ] Phase 14: Post-Release Ops âœ“
+- [ ] Phase 15: Final Validation âœ“
 
 ### Release Readiness:
 - [ ] Code complete and tested
@@ -3873,31 +3873,31 @@ Remember to:
 ### Task 2.3: Status Strip Implementation
 
 #### Subtasks:
-- [x] Create status strip primitive (opaque bottom band) using D3D11 ClearView � 2025-09-29
+- [x] Create status strip primitive (opaque bottom band) using D3D11 ClearView — 2025-09-29
   `csharp
   // D3D11Renderer.DrawStatusStrip(Color4 color, float heightDip)
   // Uses ClearView on swapchain RTV over bottom band; premultiplied alpha composition preserved
   `
- - [x] Create StatusStrip.cs UI component � 2025-09-29
- - [ ] Implement DirectWrite text rendering � deferred; using GDI?texture path per constraints
- - [x] Create text layouts for fields (Status/Region/Latency/P50/P95/Mode) � 2025-09-29
- - [x] Implement theme colors � 2025-09-29
+ - [x] Create StatusStrip.cs UI component — 2025-09-29
+ - [ ] Implement DirectWrite text rendering — deferred; using GDI?texture path per constraints
+ - [x] Create text layouts for fields (Status/Region/Latency/P50/P95/Mode) — 2025-09-29
+ - [x] Implement theme colors — 2025-09-29
 
 #### Validation Gate 2.3:
-- [x] Status strip renders at bottom of screen (see overlay.log `SelfTest.Strip begin/end`) � 2025-09-29
-- [x] Text is crisp at 100%, 125%, 150% DPI � 2025-09-29
+- [x] Status strip renders at bottom of screen (see overlay.log `SelfTest.Strip begin/end`) — 2025-09-29
+- [x] Text is crisp at 100%, 125%, 150% DPI — 2025-09-29
   - Proof PNGs (CLI harness):
     - `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi120_dark_20250929_140020.png`
     - `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi144_dark_20250929_140023.png`
     - `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi120_light_20250929_140027.png`
     - `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi144_safe_20250929_140031.png`
   - Render settings: ClearTypeGridFit, pixel-aligned insets; integer-rounded layout rect.
-- [x] All fields present (Status/Endpoint/Region/Latency/P50/P95/Mode/Presents/dt/DPI) and update � 2025-09-29
+- [x] All fields present (Status/Endpoint/Region/Latency/P50/P95/Mode/Presents/dt/DPI) and update — 2025-09-29
   - P50/P95 computed over last 120 presents in-app (rolling), Latency reflects last present dt.
-- [x] Theme switching works instantly � 2025-09-29
+- [x] Theme switching works instantly — 2025-09-29
   - Hotkey: Ctrl+Alt+T; Env: `HSGALAXY_THEME=dark|light|safe` (initial). Changes trigger immediate re-render.
-- [x] Render time typically < 2ms (Present dtMs ~0.11�0.47 ms in `overlay.log`) � 2025-09-29
-- [x] Mirror-view strip area clean (no overlay leak): `SelfTest.MirrorView Passed` � 2025-09-29
+- [x] Render time typically < 2ms (Present dtMs ~0.11–0.47 ms in `overlay.log`) — 2025-09-29
+- [x] Mirror-view strip area clean (no overlay leak): `SelfTest.MirrorView Passed` — 2025-09-29
 - [x] **PASS**
 
 
@@ -3906,7 +3906,7 @@ Remember to:
  
 ## PHASE 4: CALIBRATION WIZARD UI
 
-### Task 4.1: Calibration Wizard (Scaffold) � 2025-09-29
+### Task 4.1: Calibration Wizard (Scaffold) — 2025-09-29
 
 - [x] Minimal wizard window to select a target window and draw/edit ROIs.
   - Files: `src/HSGalaxy.App/Calibration/CalibrationWizardWindow.xaml`, `CalibrationWizardWindow.xaml.cs`, `RoiEditorOverlayWindow.xaml`, `RoiEditorOverlayWindow.xaml.cs`, `src/HSGalaxy.App/MainWindow.xaml`, `MainWindow.xaml.cs`.
@@ -3924,7 +3924,7 @@ Remember to:
 
 #### Validation (2025-09-29)
 
-- Build: `dotnet build HSGalaxyArena.sln -c Debug` � PASS (no errors).
+- Build: `dotnet build HSGalaxyArena.sln -c Debug` — PASS (no errors).
 - Wizard open: `dotnet run --project src/HSGalaxy.App` then press `Ctrl+Alt+C`.
   - Select target: PowerShell window.
   - Draw 3 ROIs across bottom bar; Save as profile name: `WizardProof`.
@@ -3940,7 +3940,7 @@ Remember to:
       - Output (2025-09-29 14:43:03): Status strip rendered to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi144_safe_20250929_144303.png
 
 #### Notes
-- Optional DirectWrite path for status strip guarded by `HSGALAXY_USE_DWRITE=1` deferred � current GDI?texture path remains default and validated crisp at 125%/150%.
+- Optional DirectWrite path for status strip guarded by `HSGALAXY_USE_DWRITE=1` deferred — current GDI?texture path remains default and validated crisp at 125%/150%.
 - GDI fallback paths for capture unchanged.
 
 
