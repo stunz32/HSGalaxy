@@ -22,7 +22,6 @@ public partial class App : Application
         _overlay.CreateOverlayWindow();
         _overlay.PositionOverlayWindow();
 
-        // DirectComposition renderer is temporarily disabled during Validation 2.1
     }
 
     protected override void OnExit(ExitEventArgs e)

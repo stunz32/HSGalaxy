@@ -16,6 +16,9 @@ namespace HSGalaxy.UI.Native
 
         private const int SW_SHOW = 5;
         private const uint LWA_ALPHA = 0x2;
+        private const int ULW_ALPHA = 0x00000002;
+        private const byte AC_SRC_OVER = 0x00;
+        private const byte AC_SRC_ALPHA = 0x01;
 
         private const int SPI_GETWORKAREA = 0x0030;
         private const int WM_DPICHANGED = 0x02E0;
@@ -62,7 +65,7 @@ namespace HSGalaxy.UI.Native
             if (_hwnd == IntPtr.Zero)
                 throw new InvalidOperationException("CreateWindowExW failed.");
 
-            // Nearly-opaque so it’s visible if needed; click-through because of WS_EX_TRANSPARENT.
+            // Keep layered style; we will push a per-pixel alpha surface for a visible debug tint.
             SetLayeredWindowAttributes(_hwnd, 0, 255, LWA_ALPHA);
 
             // Exclude from screen capture.
@@ -71,6 +74,9 @@ namespace HSGalaxy.UI.Native
             PositionOverlayWindow();
             ShowWindow(_hwnd, SW_SHOW);
             SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+
+            // Debug: draw a faint per-pixel alpha tint so users can see the overlay
+            TryApplyDebugTint(alpha: 90); // ~35% opacity
             return _hwnd;
         }
 
@@ -94,6 +100,7 @@ namespace HSGalaxy.UI.Native
             {
                 case WM_DPICHANGED:
                     PositionOverlayWindow();
+                    TryApplyDebugTint(alpha: 90);
                     break;
                 case WM_ACTIVATEAPP:
                     // Reassert topmost after task switching
@@ -101,6 +108,66 @@ namespace HSGalaxy.UI.Native
                     break;
             }
             return DefWindowProcW(hWnd, msg, wParam, lParam);
+        }
+
+        private void TryApplyDebugTint(byte alpha)
+        {
+            if (_hwnd == IntPtr.Zero) return;
+            if (!SystemParametersInfo(SPI_GETWORKAREA, 0, out RECT work, 0)) return;
+            int width = work.Right - work.Left;
+            int height = work.Bottom - work.Top;
+            if (width <= 0 || height <= 0) return;
+
+            IntPtr screenDc = GetDC(IntPtr.Zero);
+            IntPtr memDc = CreateCompatibleDC(screenDc);
+            try
+            {
+                BITMAPINFO bmi = new BITMAPINFO();
+                bmi.biSize = (uint)Marshal.SizeOf<BITMAPINFO>();
+                bmi.biWidth = width;
+                bmi.biHeight = -height; // top-down
+                bmi.biPlanes = 1;
+                bmi.biBitCount = 32;
+                bmi.biCompression = 0; // BI_RGB
+
+                IntPtr dib;
+                IntPtr bits = IntPtr.Zero;
+                dib = CreateDIBSection(memDc, ref bmi, 0, out bits, IntPtr.Zero, 0);
+                if (dib == IntPtr.Zero || bits == IntPtr.Zero) return;
+
+                IntPtr old = SelectObject(memDc, dib);
+
+                // Fill pixels with BGRA (0,0,0,alpha)
+                int stride = width * 4;
+                int total = stride * height;
+                byte[] buffer = new byte[total];
+                for (int i = 3; i < total; i += 4)
+                {
+                    buffer[i] = alpha; // A channel
+                }
+                Marshal.Copy(buffer, 0, bits, total);
+
+                POINT dstPt = new POINT { x = work.Left, y = work.Top };
+                SIZE size = new SIZE { cx = width, cy = height };
+                POINT srcPt = new POINT { x = 0, y = 0 };
+                BLENDFUNCTION blend = new BLENDFUNCTION
+                {
+                    BlendOp = AC_SRC_OVER,
+                    BlendFlags = 0,
+                    SourceConstantAlpha = 255,
+                    AlphaFormat = AC_SRC_ALPHA
+                };
+                UpdateLayeredWindow(_hwnd, screenDc, ref dstPt, ref size, memDc, ref srcPt, 0, ref blend, ULW_ALPHA);
+
+                // Cleanup
+                SelectObject(memDc, old);
+                DeleteObject(dib);
+            }
+            finally
+            {
+                DeleteDC(memDc);
+                ReleaseDC(IntPtr.Zero, screenDc);
+            }
         }
 
         public void Dispose()
@@ -180,6 +247,46 @@ namespace HSGalaxy.UI.Native
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool UnregisterClassW(string lpClassName, IntPtr hInstance);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT { public int x; public int y; }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SIZE { public int cx; public int cy; }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct BLENDFUNCTION
+        {
+            public byte BlendOp;
+            public byte BlendFlags;
+            public byte SourceConstantAlpha;
+            public byte AlphaFormat;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct BITMAPINFO
+        {
+            public uint biSize;
+            public int biWidth;
+            public int biHeight;
+            public ushort biPlanes;
+            public ushort biBitCount;
+            public uint biCompression;
+            public uint biSizeImage;
+            public int biXPelsPerMeter;
+            public int biYPelsPerMeter;
+            public uint biClrUsed;
+            public uint biClrImportant;
+        }
+
+        [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+        [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr hdc);
+        [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr hdc, IntPtr hgdiobj);
+        [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr hObject);
+        [DllImport("gdi32.dll", SetLastError = true)]
+        private static extern IntPtr CreateDIBSection(IntPtr hdc, ref BITMAPINFO pbmi, uint iUsage, out IntPtr ppvBits, IntPtr hSection, uint dwOffset);
+        [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hWnd);
+        [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool UpdateLayeredWindow(IntPtr hwnd, IntPtr hdcDst, ref POINT pptDst, ref SIZE psize, IntPtr hdcSrc, ref POINT pprSrc, int crKey, ref BLENDFUNCTION pblend, int dwFlags);
         #endregion
     }
 }
