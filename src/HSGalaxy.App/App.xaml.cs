@@ -40,13 +40,15 @@ public partial class App : System.Windows.Application
         _overlay.PositionOverlayWindow();
         OverlayLogger.Log("Overlay.WindowCreated", $"Affinity={_overlay.QueryDisplayAffinity()}");
         _overlay.RegisterThemeHotKey();
+        OverlayLogger.Log("Hotkey.Register", "Theme OK (Ctrl+Alt+T)");
         _overlay.ThemeHotkeyPressed += (_, __) => ThemeManager.Cycle();
-        if (!_overlay.RegisterCaptureHotKey()) OverlayLogger.Log("Hotkey.Register", "Capture failed (Ctrl+Alt+P)");
-        _overlay.CaptureHotkeyPressed += (_, __) => Dispatcher.InvokeAsync(async () => await CaptureCurrentProfileAsync());
-        if (!_overlay.RegisterWizardHotKey()) OverlayLogger.Log("Hotkey.Register", "Wizard failed (Ctrl+Alt+C)");
-        _overlay.WizardHotkeyPressed += (_, __) => Dispatcher.InvokeAsync(() => OpenWizard());
+        if (_overlay.RegisterCaptureHotKey()) OverlayLogger.Log("Hotkey.Register", "Capture OK (Ctrl+Alt+P)"); else OverlayLogger.Log("Hotkey.Register", "Capture FAILED (Ctrl+Alt+P)");
+        _overlay.CaptureHotkeyPressed += (_, __) => { OverlayLogger.Log("Hotkey", "Capture pressed"); Dispatcher.InvokeAsync(async () => await CaptureCurrentProfileAsync()); };
+        if (_overlay.RegisterWizardHotKey()) OverlayLogger.Log("Hotkey.Register", "Wizard OK (Ctrl+Alt+C)"); else OverlayLogger.Log("Hotkey.Register", "Wizard FAILED (Ctrl+Alt+C)");
+        _overlay.WizardHotkeyPressed += (_, __) => { OverlayLogger.Log("Hotkey", "Wizard pressed"); Dispatcher.InvokeAsync(() => OpenWizard()); };
 
         InitTrayIcon();
+        OverlayLogger.Log("Tray", "Initialized");
 
         // Initialize Vortice D3D11 + DirectComposition renderer
         _renderer = new D3D11Renderer();
@@ -86,6 +88,9 @@ public partial class App : System.Windows.Application
         };
         _presentTimer.Tick += (_, __) => _renderer?.PresentIfDirty();
         _presentTimer.Start();
+
+        // Optionally auto-open wizard (first run, or env flag)
+        TryAutoOpenWizard();
 
         // Optional: stress test via env var (HSGALAXY_STRESS_PRESENTS=1)
         var stress = Environment.GetEnvironmentVariable("HSGALAXY_STRESS_PRESENTS");
@@ -333,6 +338,32 @@ public partial class App : System.Windows.Application
         catch (System.Exception ex)
         {
             OverlayLogger.Log("Wizard.Error", ex.Message);
+        }
+    }
+
+    private void TryAutoOpenWizard()
+    {
+        try
+        {
+            var env = Environment.GetEnvironmentVariable("HSGALAXY_SHOW_WIZARD");
+            if (string.Equals(env, "1", StringComparison.OrdinalIgnoreCase))
+            {
+                OverlayLogger.Log("Wizard", "AutoOpen via env");
+                OpenWizard();
+                return;
+            }
+            // First-run heuristic: if no calibration profiles exist, open wizard
+            string calibDir = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+            var dir = new System.IO.DirectoryInfo(calibDir);
+            if (!dir.Exists || dir.GetFiles("*.json").Length == 0)
+            {
+                OverlayLogger.Log("Wizard", "AutoOpen (no profiles found)");
+                OpenWizard();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            OverlayLogger.Log("Wizard.AutoOpen.Error", ex.Message);
         }
     }
 
