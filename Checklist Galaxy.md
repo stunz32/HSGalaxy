@@ -64,7 +64,7 @@
 ### Task 1.2: Application Manifest Configuration
 
 #### Subtasks:
-- [ ] Create `app.manifest` in HSGalaxy.App project with:
+- [x] Create `app.manifest` in HSGalaxy.App project with:
   ```xml
   <?xml version="1.0" encoding="utf-8"?>
   <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
@@ -90,11 +90,11 @@
     </application>
   </assembly>
   ```
-- [ ] Update HSGalaxy.App.csproj to include manifest:
+- [x] Update HSGalaxy.App.csproj to include manifest:
   ```xml
   <ApplicationManifest>app.manifest</ApplicationManifest>
   ```
-- [ ] Create `AssemblyInfo.cs` with proper attributes:
+- [x] Create `AssemblyInfo.cs` with proper attributes:
   ```csharp
   [assembly: AssemblyTitle("HSGalaxy Arena Draft Assistant")]
   [assembly: AssemblyDescription("Hearthstone Arena Draft OCR Assistant")]
@@ -107,7 +107,7 @@
   ```
 
 #### Validation Gate 1.2:
-- [ ] Build and run application
+- [ ] Build and run application (build passed on 2025-09-29; run pending manual verification)
 - [ ] Open Process Explorer, verify process shows "Per-Monitor Aware V2"
 - [ ] Verify long path support enabled (create test path > 260 chars)
 - [ ] **STOP if any validation fails**
