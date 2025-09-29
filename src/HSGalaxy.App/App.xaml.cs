@@ -8,6 +8,7 @@ using HSGalaxy.Diagnostics;
 using HSGalaxy.UI.Validation;
 using HSGalaxy.Core.Config;
 using HSGalaxy.Core.Calibration;
+using HSGalaxy.App.Calibration;
 
 namespace HSGalaxy.App;
 
@@ -24,6 +25,7 @@ public partial class App : Application
     private readonly System.Collections.Generic.List<double> _presentDurations = new();
     private JsonConfigStore<AppSettings>? _settingsStore;
     private AppSettings _settings = new AppSettings();
+    private CalibrationWizardWindow? _wizard;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -39,6 +41,8 @@ public partial class App : Application
         _overlay.ThemeHotkeyPressed += (_, __) => ThemeManager.Cycle();
         _overlay.RegisterCaptureHotKey();
         _overlay.CaptureHotkeyPressed += (_, __) => Dispatcher.InvokeAsync(async () => await CaptureCurrentProfileAsync());
+        _overlay.RegisterWizardHotKey();
+        _overlay.WizardHotkeyPressed += (_, __) => Dispatcher.InvokeAsync(() => OpenWizard());
 
         // Initialize Vortice D3D11 + DirectComposition renderer
         _renderer = new D3D11Renderer();
@@ -278,6 +282,32 @@ public partial class App : Application
         };
         _renderer.DrawStatusStrip(strip);
         _renderer.PresentIfDirty();
+    }
+
+    private void OpenWizard()
+    {
+        try
+        {
+            if (_wizard == null || !_wizard.IsVisible)
+            {
+                _wizard = new CalibrationWizardWindow();
+                _wizard.Owner = null; // modeless
+                _wizard.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                _wizard.Closed += (_, __) => _wizard = null;
+                _wizard.Show();
+                OverlayLogger.Log("Wizard", "Opened");
+            }
+            else
+            {
+                if (_wizard.WindowState == WindowState.Minimized) _wizard.WindowState = WindowState.Normal;
+                _wizard.Activate();
+                OverlayLogger.Log("Wizard", "Activated");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            OverlayLogger.Log("Wizard.Error", ex.Message);
+        }
     }
 
     private async System.Threading.Tasks.Task CaptureCurrentProfileAsync()

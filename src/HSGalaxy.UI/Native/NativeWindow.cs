@@ -44,11 +44,14 @@ namespace HSGalaxy.UI.Native
         private const int MOD_CONTROL = 0x0002;
         private const int VK_T = 0x54;
         private const int VK_P = 0x50;
+        private const int VK_C = 0x43;
         private const int HOTKEY_ID_THEME = 0xA11E; // arbitrary unique id
         private const int HOTKEY_ID_CAPTURE = 0xA11F;
+        private const int HOTKEY_ID_WIZARD = 0xA120;
 
         public event EventHandler? ThemeHotkeyPressed;
         public event EventHandler? CaptureHotkeyPressed;
+        public event EventHandler? WizardHotkeyPressed;
 
         /// <summary>
         /// Creates and shows the overlay window.
@@ -105,6 +108,13 @@ namespace HSGalaxy.UI.Native
             return RegisterHotKey(_hwnd, HOTKEY_ID_CAPTURE, MOD_CONTROL | MOD_ALT, VK_P);
         }
 
+        public bool RegisterWizardHotKey()
+        {
+            if (_hwnd == IntPtr.Zero) return false;
+            // Ctrl + Alt + C
+            return RegisterHotKey(_hwnd, HOTKEY_ID_WIZARD, MOD_CONTROL | MOD_ALT, VK_C);
+        }
+
         /// <summary>
         /// Positions the overlay to the primary monitor work area with DPI awareness.
         /// </summary>
@@ -138,6 +148,7 @@ namespace HSGalaxy.UI.Native
                 case WM_HOTKEY:
                     if (wParam == (IntPtr)HOTKEY_ID_THEME) { ThemeHotkeyPressed?.Invoke(this, EventArgs.Empty); return IntPtr.Zero; }
                     if (wParam == (IntPtr)HOTKEY_ID_CAPTURE) { CaptureHotkeyPressed?.Invoke(this, EventArgs.Empty); return IntPtr.Zero; }
+                    if (wParam == (IntPtr)HOTKEY_ID_WIZARD) { WizardHotkeyPressed?.Invoke(this, EventArgs.Empty); return IntPtr.Zero; }
                     break;
             }
             return DefWindowProcW(hWnd, msg, wParam, lParam);
@@ -220,6 +231,7 @@ namespace HSGalaxy.UI.Native
             {
                 try { UnregisterHotKey(_hwnd, HOTKEY_ID_THEME); } catch { }
                 try { UnregisterHotKey(_hwnd, HOTKEY_ID_CAPTURE); } catch { }
+                try { UnregisterHotKey(_hwnd, HOTKEY_ID_WIZARD); } catch { }
                 try { DestroyWindow(_hwnd); } catch { }
                 _hwnd = IntPtr.Zero;
             }
