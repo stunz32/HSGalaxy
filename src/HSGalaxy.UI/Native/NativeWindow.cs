@@ -65,8 +65,8 @@ namespace HSGalaxy.UI.Native
             if (_hwnd == IntPtr.Zero)
                 throw new InvalidOperationException("CreateWindowExW failed.");
 
-            // Keep layered style; we will push a per-pixel alpha surface for a visible debug tint.
-            SetLayeredWindowAttributes(_hwnd, 0, 255, LWA_ALPHA);
+            // Keep layered style; constant alpha not required when using UpdateLayeredWindow with per-pixel alpha.
+            // SetLayeredWindowAttributes(_hwnd, 0, 255, LWA_ALPHA);
 
             // Exclude from screen capture.
             SetWindowDisplayAffinity(_hwnd, WDA_EXCLUDEFROMCAPTURE);
@@ -103,8 +103,9 @@ namespace HSGalaxy.UI.Native
                     TryApplyDebugTint(alpha: 90);
                     break;
                 case WM_ACTIVATEAPP:
-                    // Reassert topmost after task switching
+                    // Reassert topmost after task switching and reapply tint
                     SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                    TryApplyDebugTint(alpha: 200); // make it very obvious after switches
                     break;
             }
             return DefWindowProcW(hWnd, msg, wParam, lParam);
@@ -113,9 +114,10 @@ namespace HSGalaxy.UI.Native
         private void TryApplyDebugTint(byte alpha)
         {
             if (_hwnd == IntPtr.Zero) return;
-            if (!SystemParametersInfo(SPI_GETWORKAREA, 0, out RECT work, 0)) return;
-            int width = work.Right - work.Left;
-            int height = work.Bottom - work.Top;
+            // Use actual window rectangle to match the overlay size/position
+            if (!GetWindowRect(_hwnd, out RECT wndRect)) return;
+            int width = wndRect.Right - wndRect.Left;
+            int height = wndRect.Bottom - wndRect.Top;
             if (width <= 0 || height <= 0) return;
 
             IntPtr screenDc = GetDC(IntPtr.Zero);
@@ -137,17 +139,25 @@ namespace HSGalaxy.UI.Native
 
                 IntPtr old = SelectObject(memDc, dib);
 
-                // Fill pixels with BGRA (0,0,0,alpha)
+                // Fill pixels with a bright magenta premultiplied color so it's clearly visible
+                // Premultiplied: colorChannel = desiredChannel * alpha / 255
+                byte a = alpha;
+                byte r = a; // 255 * a / 255
+                byte g = 0;
+                byte b = a; // magenta
                 int stride = width * 4;
                 int total = stride * height;
                 byte[] buffer = new byte[total];
-                for (int i = 3; i < total; i += 4)
+                for (int i = 0; i < total; i += 4)
                 {
-                    buffer[i] = alpha; // A channel
+                    buffer[i + 0] = b; // B
+                    buffer[i + 1] = g; // G
+                    buffer[i + 2] = r; // R
+                    buffer[i + 3] = a; // A
                 }
                 Marshal.Copy(buffer, 0, bits, total);
 
-                POINT dstPt = new POINT { x = work.Left, y = work.Top };
+                POINT dstPt = new POINT { x = wndRect.Left, y = wndRect.Top };
                 SIZE size = new SIZE { cx = width, cy = height };
                 POINT srcPt = new POINT { x = 0, y = 0 };
                 BLENDFUNCTION blend = new BLENDFUNCTION
@@ -287,6 +297,8 @@ namespace HSGalaxy.UI.Native
         [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool UpdateLayeredWindow(IntPtr hwnd, IntPtr hdcDst, ref POINT pptDst, ref SIZE psize, IntPtr hdcSrc, ref POINT pprSrc, int crKey, ref BLENDFUNCTION pblend, int dwFlags);
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
         #endregion
     }
 }
