@@ -1,4 +1,4 @@
-﻿using System.Configuration;
+using System.Configuration;
 using System.Data;
 using System.Windows;
 using HSGalaxy.UI.Native;
@@ -9,15 +9,16 @@ using HSGalaxy.UI.Validation;
 using HSGalaxy.Core.Config;
 using HSGalaxy.Core.Calibration;
 using HSGalaxy.App.Calibration;
+using Forms = System.Windows.Forms;
 
 namespace HSGalaxy.App;
 
 /// <summary>
 /// Interaction logic for App.xaml
 /// </summary>
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
-    private NativeWindow? _overlay;
+    private HSGalaxy.UI.Native.NativeWindow? _overlay;
     private D3D11Renderer? _renderer;
     private DispatcherTimer? _presentTimer;
     private DispatcherTimer? _stressTimer;
@@ -26,6 +27,7 @@ public partial class App : Application
     private JsonConfigStore<AppSettings>? _settingsStore;
     private AppSettings _settings = new AppSettings();
     private CalibrationWizardWindow? _wizard;
+    private Forms.NotifyIcon? _tray;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -33,16 +35,18 @@ public partial class App : Application
         // Ensure app stays alive without a visible WPF window
         this.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         // Create click-through overlay window
-        _overlay = new NativeWindow();
+        _overlay = new HSGalaxy.UI.Native.NativeWindow();
         _overlay.CreateOverlayWindow();
         _overlay.PositionOverlayWindow();
         OverlayLogger.Log("Overlay.WindowCreated", $"Affinity={_overlay.QueryDisplayAffinity()}");
         _overlay.RegisterThemeHotKey();
         _overlay.ThemeHotkeyPressed += (_, __) => ThemeManager.Cycle();
-        _overlay.RegisterCaptureHotKey();
+        if (!_overlay.RegisterCaptureHotKey()) OverlayLogger.Log("Hotkey.Register", "Capture failed (Ctrl+Alt+P)");
         _overlay.CaptureHotkeyPressed += (_, __) => Dispatcher.InvokeAsync(async () => await CaptureCurrentProfileAsync());
-        _overlay.RegisterWizardHotKey();
+        if (!_overlay.RegisterWizardHotKey()) OverlayLogger.Log("Hotkey.Register", "Wizard failed (Ctrl+Alt+C)");
         _overlay.WizardHotkeyPressed += (_, __) => Dispatcher.InvokeAsync(() => OpenWizard());
+
+        InitTrayIcon();
 
         // Initialize Vortice D3D11 + DirectComposition renderer
         _renderer = new D3D11Renderer();
@@ -226,6 +230,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        if (_tray != null) { try { _tray.Visible = false; _tray.Dispose(); } catch { } _tray = null; }
         _presentTimer?.Stop();
         _stressTimer?.Stop();
         _renderer?.Dispose();
@@ -241,6 +246,26 @@ public partial class App : Application
         var hwnd = _overlay.Handle;
         GetClientRect(hwnd, out RECT rc);
         w = rc.Right - rc.Left; h = rc.Bottom - rc.Top;
+    }
+
+    private void InitTrayIcon()
+    {
+        try
+        {
+            _tray = new Forms.NotifyIcon();
+            _tray.Icon = System.Drawing.SystemIcons.Application;
+            _tray.Text = "HSGalaxy";
+            var menu = new Forms.ContextMenuStrip();
+            menu.Items.Add("Open Calibration Wizard (Ctrl+Alt+C)", null, (_, __) => OpenWizard());
+            menu.Items.Add("Capture Current Profile (Ctrl+Alt+P)", null, async (_, __) => await CaptureCurrentProfileAsync());
+            menu.Items.Add("Exit", null, (_, __) => Shutdown());
+            _tray.ContextMenuStrip = menu;
+            _tray.Visible = true;
+        }
+        catch (System.Exception ex)
+        {
+            OverlayLogger.Log("TrayIcon.Error", ex.Message);
+        }
     }
 
     private void TryRenderStatusStrip()
@@ -405,4 +430,6 @@ public partial class App : Application
     private struct RECT { public int Left, Top, Right, Bottom; }
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool GetClientRect(nint hWnd, out RECT lpRect);
 }
+
+
 

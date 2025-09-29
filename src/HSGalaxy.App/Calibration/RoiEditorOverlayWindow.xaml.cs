@@ -19,15 +19,15 @@ public partial class RoiEditorOverlayWindow : Window
     private bool _draggingNew = false;
     private bool _draggingMove = false;
     private bool _draggingResize = false;
-    private Point _start;
-    private Rectangle? _currentRect;
-    private Rectangle? _hitRect;
-    private Rectangle? _selectedRect;
-    private ResizeMode _resizeMode = ResizeMode.None;
+    private System.Windows.Point _start;
+    private System.Windows.Shapes.Rectangle? _currentRect;
+    private System.Windows.Shapes.Rectangle? _hitRect;
+    private System.Windows.Shapes.Rectangle? _selectedRect;
+    private ResizeEdges _resizeMode = ResizeEdges.None;
     private const double Grip = 6.0; // DIP tolerance for edge hit tests
 
     [Flags]
-    private enum ResizeMode { None=0, Left=1, Top=2, Right=4, Bottom=8 }
+    private enum ResizeEdges { None=0, Left=1, Top=2, Right=4, Bottom=8 }
 
     public RoiEditorOverlayWindow(HSGalaxy.UI.Capture.WindowPicker.WindowInfo target)
     {
@@ -53,7 +53,7 @@ public partial class RoiEditorOverlayWindow : Window
 
     public void ClearRois()
     {
-        var keep = CanvasRoot.Children.OfType<UIElement>().Where(c => c is not Rectangle).ToList();
+        var keep = CanvasRoot.Children.OfType<UIElement>().Where(c => c is not System.Windows.Shapes.Rectangle).ToList();
         CanvasRoot.Children.Clear();
         foreach (var k in keep) CanvasRoot.Children.Add(k);
         _selectedRect = null;
@@ -64,7 +64,7 @@ public partial class RoiEditorOverlayWindow : Window
         double sx = _dpi.DpiScaleX;
         double sy = _dpi.DpiScaleY;
         var rois = new List<Roi>();
-        foreach (var r in CanvasRoot.Children.OfType<Rectangle>())
+        foreach (var r in CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>())
         {
             double x = Canvas.GetLeft(r);
             double y = Canvas.GetTop(r);
@@ -98,12 +98,12 @@ public partial class RoiEditorOverlayWindow : Window
         }
     }
 
-    private Rectangle CreateRect()
+    private System.Windows.Shapes.Rectangle CreateRect()
     {
-        return new Rectangle
+        return new System.Windows.Shapes.Rectangle
         {
-            Stroke = Brushes.Lime,
-            Fill = new SolidColorBrush(Color.FromArgb(30, 0, 255, 0)),
+            Stroke = System.Windows.Media.Brushes.Lime,
+            Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 0, 255, 0)),
             StrokeThickness = 2.0,
             RadiusX = 2,
             RadiusY = 2
@@ -118,7 +118,7 @@ public partial class RoiEditorOverlayWindow : Window
         {
             _selectedRect = _hitRect;
             _resizeMode = GetResizeMode(_hitRect, _start);
-            if (_resizeMode != ResizeMode.None)
+            if (_resizeMode != ResizeEdges.None)
             {
                 _draggingResize = true;
             }
@@ -142,7 +142,7 @@ public partial class RoiEditorOverlayWindow : Window
         e.Handled = true;
     }
 
-    private void CanvasRoot_MouseMove(object sender, MouseEventArgs e)
+    private void CanvasRoot_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
         var p = e.GetPosition(CanvasRoot);
         if (_draggingNew && _currentRect != null)
@@ -170,23 +170,23 @@ public partial class RoiEditorOverlayWindow : Window
         }
     }
 
-    private void CanvasRoot_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private void CanvasRoot_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         _draggingNew = false;
         _draggingMove = false;
         _currentRect = null;
         _hitRect = null;
         _draggingResize = false;
-        _resizeMode = ResizeMode.None;
+        _resizeMode = ResizeEdges.None;
         Mouse.Capture(null);
     }
 
-    private void CanvasRoot_KeyDown(object sender, KeyEventArgs e)
+    private void CanvasRoot_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (e.Key == Key.Delete)
         {
             // Remove last rectangle
-            var last = _selectedRect ?? CanvasRoot.Children.OfType<Rectangle>().LastOrDefault();
+            var last = _selectedRect ?? CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>().LastOrDefault();
             if (last != null)
             {
                 CanvasRoot.Children.Remove(last);
@@ -214,9 +214,9 @@ public partial class RoiEditorOverlayWindow : Window
         }
     }
 
-    private Rectangle? HitTest(Point p)
+    private System.Windows.Shapes.Rectangle? HitTest(System.Windows.Point p)
     {
-        foreach (var r in CanvasRoot.Children.OfType<Rectangle>().Reverse())
+        foreach (var r in CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>().Reverse())
         {
             double x = Canvas.GetLeft(r);
             double y = Canvas.GetTop(r);
@@ -226,20 +226,20 @@ public partial class RoiEditorOverlayWindow : Window
         return null;
     }
 
-    private ResizeMode GetResizeMode(Rectangle r, Point p)
+    private ResizeEdges GetResizeMode(System.Windows.Shapes.Rectangle r, System.Windows.Point p)
     {
         double x = Canvas.GetLeft(r);
         double y = Canvas.GetTop(r);
         double l = x, t = y, rt = x + r.Width, bt = y + r.Height;
-        ResizeMode mode = ResizeMode.None;
-        if (Math.Abs(p.X - l) <= Grip) mode |= ResizeMode.Left;
-        if (Math.Abs(p.X - rt) <= Grip) mode |= ResizeMode.Right;
-        if (Math.Abs(p.Y - t) <= Grip) mode |= ResizeMode.Top;
-        if (Math.Abs(p.Y - bt) <= Grip) mode |= ResizeMode.Bottom;
+        ResizeEdges mode = ResizeEdges.None;
+        if (Math.Abs(p.X - l) <= Grip) mode |= ResizeEdges.Left;
+        if (Math.Abs(p.X - rt) <= Grip) mode |= ResizeEdges.Right;
+        if (Math.Abs(p.Y - t) <= Grip) mode |= ResizeEdges.Top;
+        if (Math.Abs(p.Y - bt) <= Grip) mode |= ResizeEdges.Bottom;
         return mode;
     }
 
-    private void MoveRect(Rectangle rect, double dx, double dy)
+    private void MoveRect(System.Windows.Shapes.Rectangle rect, double dx, double dy)
     {
         double nx = Math.Max(0, Canvas.GetLeft(rect) + dx);
         double ny = Math.Max(0, Canvas.GetTop(rect) + dy);
@@ -249,7 +249,7 @@ public partial class RoiEditorOverlayWindow : Window
         Canvas.SetTop(rect, ny);
     }
 
-    private void ResizeRect(Rectangle rect, Point cursor)
+    private void ResizeRect(System.Windows.Shapes.Rectangle rect, System.Windows.Point cursor)
     {
         double x = Canvas.GetLeft(rect);
         double y = Canvas.GetTop(rect);
@@ -257,21 +257,21 @@ public partial class RoiEditorOverlayWindow : Window
         double h = rect.Height;
         double nx = x, ny = y, nw = w, nh = h;
 
-        if (_resizeMode.HasFlag(ResizeMode.Left))
+        if (_resizeMode.HasFlag(ResizeEdges.Left))
         {
             nx = Math.Min(cursor.X, x + w - 1);
             nw = (x + w) - nx;
         }
-        if (_resizeMode.HasFlag(ResizeMode.Right))
+        if (_resizeMode.HasFlag(ResizeEdges.Right))
         {
             nw = Math.Max(1, cursor.X - x);
         }
-        if (_resizeMode.HasFlag(ResizeMode.Top))
+        if (_resizeMode.HasFlag(ResizeEdges.Top))
         {
             ny = Math.Min(cursor.Y, y + h - 1);
             nh = (y + h) - ny;
         }
-        if (_resizeMode.HasFlag(ResizeMode.Bottom))
+        if (_resizeMode.HasFlag(ResizeEdges.Bottom))
         {
             nh = Math.Max(1, cursor.Y - y);
         }

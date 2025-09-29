@@ -98,21 +98,24 @@ namespace HSGalaxy.UI.Native
         {
             if (_hwnd == IntPtr.Zero) return false;
             // Ctrl + Alt + T
-            return RegisterHotKey(_hwnd, HOTKEY_ID_THEME, MOD_CONTROL | MOD_ALT, VK_T);
+            bool ok = RegisterHotKey(_hwnd, HOTKEY_ID_THEME, MOD_CONTROL | MOD_ALT, VK_T);
+            return ok;
         }
 
         public bool RegisterCaptureHotKey()
         {
             if (_hwnd == IntPtr.Zero) return false;
             // Ctrl + Alt + P
-            return RegisterHotKey(_hwnd, HOTKEY_ID_CAPTURE, MOD_CONTROL | MOD_ALT, VK_P);
+            bool ok = RegisterHotKey(_hwnd, HOTKEY_ID_CAPTURE, MOD_CONTROL | MOD_ALT, VK_P);
+            return ok;
         }
 
         public bool RegisterWizardHotKey()
         {
             if (_hwnd == IntPtr.Zero) return false;
             // Ctrl + Alt + C
-            return RegisterHotKey(_hwnd, HOTKEY_ID_WIZARD, MOD_CONTROL | MOD_ALT, VK_C);
+            bool ok = RegisterHotKey(_hwnd, HOTKEY_ID_WIZARD, MOD_CONTROL | MOD_ALT, VK_C);
+            return ok;
         }
 
         /// <summary>
