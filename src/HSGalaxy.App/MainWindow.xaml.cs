@@ -1,23 +1,33 @@
-﻿using System.Text;
+using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace HSGalaxy.App;
 
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
 public partial class MainWindow : Window
 {
     public MainWindow()
     {
         InitializeComponent();
+        SetupHotkeys();
+    }
+
+    private void SetupHotkeys()
+    {
+        var gesture = new KeyGesture(Key.C, ModifierKeys.Control | ModifierKeys.Alt);
+        var cmd = new RoutedCommand();
+        cmd.InputGestures.Add(gesture);
+        CommandBindings.Add(new CommandBinding(cmd, (_, __) => OpenCalibrationWizard()));
+    }
+
+    private void BtnOpenCalib_Click(object sender, RoutedEventArgs e) => OpenCalibrationWizard();
+
+    private void OpenCalibrationWizard()
+    {
+        var wiz = new Calibration.CalibrationWizardWindow();
+        wiz.Owner = this;
+        wiz.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        wiz.Show();
     }
 }
+

@@ -1,12 +1,25 @@
-﻿<Window x:Class="HSGalaxy.App.MainWindow"
+<Window x:Class="HSGalaxy.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HSGalaxy.App"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="HSGalaxy" Height="420" Width="680">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="BtnOpenCalib" Content="Open Calibration Wizard" Padding="12,6" Click="BtnOpenCalib_Click"/>
+            <TextBlock Text="  (Hotkey: Ctrl+Alt+C)" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" Opacity="0.7">
+HSGalaxy overlay and capture subsystems are active. Use the Calibration Wizard to select a target window and draw Regions of Interest (ROIs). Save and load profiles via the wizard. Use the CLI to capture a composite of the current profile for checklist evidence.
+        </TextBlock>
     </Grid>
 </Window>
+

@@ -1,0 +1,15 @@
+<Window x:Class="HSGalaxy.App.Calibration.RoiEditorOverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ROI Overlay" ShowInTaskbar="False" Topmost="True"
+        WindowStyle="None" ResizeMode="NoResize"
+        AllowsTransparency="True" Background="#1A000000" Opacity="1.0">
+    <Canvas x:Name="CanvasRoot" Focusable="True"
+            MouseLeftButtonDown="CanvasRoot_MouseLeftButtonDown"
+            MouseMove="CanvasRoot_MouseMove"
+            MouseLeftButtonUp="CanvasRoot_MouseLeftButtonUp"
+            KeyDown="CanvasRoot_KeyDown">
+        <!-- ROIs are rectangles added dynamically -->
+    </Canvas>
+</Window>
+
