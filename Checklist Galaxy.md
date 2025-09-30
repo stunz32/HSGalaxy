@@ -3960,5 +3960,33 @@ Remember to:
 - GDI fallback paths for capture unchanged.
 
 
+### Task 4.1 – Follow‑ups and Fixes — 2025-09-30
+
+- [x] Fix wizard XAML load error preventing window from appearing.
+  - Issue: invalid color literal in `CalibrationWizardWindow.xaml` caused BAML loader exception.
+  - Evidence (overlay.log 2025-09-29 18:16:25): `Wizard.Error 'Provide value on '...DeferredBinaryDeserializerExtension'...'` → fixed to a valid `#AARRGGBB` value.
+  - Added Safe Wizard mode to guarantee visibility during testing: `HSGALAXY_DISABLE_OVERLAY=1`, `HSGALAXY_SHOW_WIZARD=1`, optional self‑test `HSGALAXY_WIZARD_SELFTEST=1` (logs PASS/FAIL) and `HSGALAXY_EXIT_AFTER_TEST=1`.
+
+- [x] Fix empty window list text (binding).
+  - Root cause: `WindowPicker.WindowInfo` was a struct with fields (WPF binding doesn’t see fields reliably).
+  - Change: converted to class with public properties; wizard now shows window titles and class tooltips.
+
+- [x] Fix selection not sticking when clicking list items.
+  - Added `SelectionChanged` handler; clicking an item updates `_selected` immediately and status line.
+
+- [x] Fix overlay editor not drawing rectangles.
+  - Root cause: `Canvas` had no background; WPF didn’t deliver mouse events.
+  - Change: `Background="Transparent"` + focus on load. Drawing, moving, resizing, keyboard nudging all working.
+
+- [x] Verified end‑to‑end: Draw → Save profile → Capture proof.
+  - Profile saved (user): latest detected `wizard1.json` in `%LOCALAPPDATA%\HSGalaxy\calibration`.
+  - CLI capture proof (2025-09-29 20:09:35):
+    - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile wizard1`
+    - Output: `Composite saved to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\profile_wizard1_20250929_200935.png`
+
+- [x] Hotkeys/tray reliability and visibility
+  - Overlay hides while wizard is open; restored on close. Tray has “Open Calibration Wizard” and “Capture Current Profile”.
+  - Hotkey diagnostics log OK/FAILED registration; tray provides fallback if chords are taken by other apps.
+
     - Composite sample:  `dotnet run --project src/HSGalaxy.CLI -- calib:capture` 
       - Output (2025-09-29 14:43:33): Composite saved to: C:\\Users\\Marcco\\AppData\\Local\\Temp\\HSGalaxy\\composite_20250929_144333.png

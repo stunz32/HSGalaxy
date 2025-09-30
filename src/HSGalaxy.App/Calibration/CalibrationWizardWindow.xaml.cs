@@ -38,6 +38,20 @@ public partial class CalibrationWizardWindow : Window
 
     private void BtnRefresh_Click(object sender, RoutedEventArgs e) => LoadWindows(TxtFilter.Text);
 
+    private void LstWindows_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (LstWindows.SelectedItem is WindowPicker.WindowInfo wi)
+        {
+            _selected = wi;
+            SetStatus($"Selected: {_selected.Title} [Class={_selected.Class}]  ({_selected.Left},{_selected.Top})-({_selected.Right},{_selected.Bottom})");
+        }
+        else
+        {
+            _selected = null;
+            SetStatus("No target window selected.");
+        }
+    }
+
     private void BtnSelectWindow_Click(object sender, RoutedEventArgs e)
     {
         if (LstWindows.SelectedItem is HSGalaxy.UI.Capture.WindowPicker.WindowInfo wi)
@@ -49,7 +63,7 @@ public partial class CalibrationWizardWindow : Window
             SetStatus("Select a window from the list.");
             return;
         }
-        SetStatus($"Selected: {_selected.Value.Title} [Class={_selected.Value.Class}]  ({_selected.Value.Left},{_selected.Value.Top})-({_selected.Value.Right},{_selected.Value.Bottom})");
+        SetStatus($"Selected: {_selected.Title} [Class={_selected.Class}]  ({_selected.Left},{_selected.Top})-({_selected.Right},{_selected.Bottom})");
         EnsureOverlay();
     }
 
@@ -65,7 +79,7 @@ public partial class CalibrationWizardWindow : Window
         }
         if (_overlay == null)
         {
-            _overlay = new RoiEditorOverlayWindow(_selected.Value);
+            _overlay = new RoiEditorOverlayWindow(_selected);
             _overlay.Show();
         }
         else

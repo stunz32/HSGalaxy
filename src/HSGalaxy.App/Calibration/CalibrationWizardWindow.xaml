@@ -26,7 +26,7 @@
                         <Button Content="Refresh" Click="BtnRefresh_Click"/>
                         <Button Content="Select" Margin="6,0,0,0" Click="BtnSelectWindow_Click"/>
                     </StackPanel>
-                    <ListBox x:Name="LstWindows">
+                    <ListBox x:Name="LstWindows" SelectionChanged="LstWindows_SelectionChanged">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Title}" ToolTip="{Binding Class}"/>
@@ -54,7 +54,7 @@ Press and drag on the overlay to create a ROI. Drag inside a ROI to move it. Pre
                         <Button Content="Close Overlay" Margin="6,0,0,0" Click="BtnCloseOverlay_Click"/>
                         <Button Content="Capture Proof PNG" Margin="6,0,0,0" Click="BtnCaptureProof_Click"/>
                     </StackPanel>
-                    <TextBlock x:Name="TxtStatus" Margin="0,8,0,0" Foreground="#FF0A7"/>
+                    <TextBlock x:Name="TxtStatus" Margin="0,8,0,0" Foreground="#FFFF0A70"/>
                 </StackPanel>
             </GroupBox>
         </Grid>
