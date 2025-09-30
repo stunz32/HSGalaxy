@@ -43,6 +43,8 @@ namespace HSGalaxy.UI.Native
 
         private const int MOD_ALT = 0x0001;
         private const int MOD_CONTROL = 0x0002;
+        private const int MOD_SHIFT = 0x0004;
+        private const int MOD_WIN = 0x0008;
         private const int VK_T = 0x54;
         private const int VK_P = 0x50;
         private const int VK_C = 0x43;
@@ -128,6 +130,76 @@ namespace HSGalaxy.UI.Native
             // Ctrl + Alt + C
             bool ok = RegisterHotKey(_hwnd, HOTKEY_ID_WIZARD, MOD_CONTROL | MOD_ALT, VK_C);
             return ok;
+        }
+
+        public void UnregisterAllHotKeys()
+        {
+            if (_hwnd == IntPtr.Zero) return;
+            try { UnregisterHotKey(_hwnd, HOTKEY_ID_THEME); } catch { }
+            try { UnregisterHotKey(_hwnd, HOTKEY_ID_CAPTURE); } catch { }
+            try { UnregisterHotKey(_hwnd, HOTKEY_ID_WIZARD); } catch { }
+        }
+
+        public bool RegisterHotKeys(string themeChord, string captureChord, string wizardChord)
+        {
+            if (_hwnd == IntPtr.Zero) return false;
+            UnregisterAllHotKeys();
+            bool okTheme = TryParseChord(themeChord, out int m1, out int k1) && RegisterHotKey(_hwnd, HOTKEY_ID_THEME, m1, k1);
+            bool okCapture = TryParseChord(captureChord, out int m2, out int k2) && RegisterHotKey(_hwnd, HOTKEY_ID_CAPTURE, m2, k2);
+            bool okWizard = TryParseChord(wizardChord, out int m3, out int k3) && RegisterHotKey(_hwnd, HOTKEY_ID_WIZARD, m3, k3);
+            return okTheme && okCapture && okWizard;
+        }
+
+        public bool RegisterThemeChord(string chord)
+        {
+            if (_hwnd == IntPtr.Zero) return false;
+            UnregisterHotKey(_hwnd, HOTKEY_ID_THEME);
+            return TryParseChord(chord, out int mod, out int vk) && RegisterHotKey(_hwnd, HOTKEY_ID_THEME, mod, vk);
+        }
+
+        public bool RegisterCaptureChord(string chord)
+        {
+            if (_hwnd == IntPtr.Zero) return false;
+            UnregisterHotKey(_hwnd, HOTKEY_ID_CAPTURE);
+            return TryParseChord(chord, out int mod, out int vk) && RegisterHotKey(_hwnd, HOTKEY_ID_CAPTURE, mod, vk);
+        }
+
+        public bool RegisterWizardChord(string chord)
+        {
+            if (_hwnd == IntPtr.Zero) return false;
+            UnregisterHotKey(_hwnd, HOTKEY_ID_WIZARD);
+            return TryParseChord(chord, out int mod, out int vk) && RegisterHotKey(_hwnd, HOTKEY_ID_WIZARD, mod, vk);
+        }
+
+        private static bool TryParseChord(string chord, out int modifiers, out int vk)
+        {
+            modifiers = 0; vk = 0;
+            if (string.IsNullOrWhiteSpace(chord)) return false;
+            var parts = chord.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Length == 0) return false;
+            // Last token is the key
+            string keyToken = parts[^1].ToUpperInvariant();
+            for (int i = 0; i < parts.Length - 1; i++)
+            {
+                string t = parts[i].Trim().ToLowerInvariant();
+                if (t is "ctrl" or "control") modifiers |= MOD_CONTROL;
+                else if (t == "alt") modifiers |= MOD_ALT;
+                else if (t == "shift") modifiers |= MOD_SHIFT;
+                else if (t is "win" or "windows") modifiers |= MOD_WIN;
+            }
+            // Key mapping: A-Z, 0-9, F1-F24
+            if (keyToken.Length == 1)
+            {
+                char c = keyToken[0];
+                if (c >= 'A' && c <= 'Z') { vk = c; return true; }
+                if (c >= '0' && c <= '9') { vk = c; return true; }
+            }
+            if (keyToken.StartsWith("F") && int.TryParse(keyToken.AsSpan(1), out int fn) && fn >= 1 && fn <= 24)
+            {
+                vk = 0x70 + (fn - 1); // VK_F1 = 0x70
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

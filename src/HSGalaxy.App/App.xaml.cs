@@ -57,13 +57,12 @@ public partial class App : System.Windows.Application
         _overlay.CreateOverlayWindow();
         _overlay.PositionOverlayWindow();
         OverlayLogger.Log("Overlay.WindowCreated", $"Affinity={_overlay.QueryDisplayAffinity()}");
-        _overlay.RegisterThemeHotKey();
-        OverlayLogger.Log("Hotkey.Register", "Theme OK (Ctrl+Alt+T)");
+        // Load settings before registering hotkeys
+        TryInitSettings();
         _overlay.ThemeHotkeyPressed += (_, __) => ThemeManager.Cycle();
-        if (_overlay.RegisterCaptureHotKey()) OverlayLogger.Log("Hotkey.Register", "Capture OK (Ctrl+Alt+P)"); else OverlayLogger.Log("Hotkey.Register", "Capture FAILED (Ctrl+Alt+P)");
         _overlay.CaptureHotkeyPressed += (_, __) => { OverlayLogger.Log("Hotkey", "Capture pressed"); Dispatcher.InvokeAsync(async () => await CaptureCurrentProfileAsync()); };
-        if (_overlay.RegisterWizardHotKey()) OverlayLogger.Log("Hotkey.Register", "Wizard OK (Ctrl+Alt+C)"); else OverlayLogger.Log("Hotkey.Register", "Wizard FAILED (Ctrl+Alt+C)");
         _overlay.WizardHotkeyPressed += (_, __) => { OverlayLogger.Log("Hotkey", "Wizard pressed"); Dispatcher.InvokeAsync(() => OpenWizard()); };
+        ApplyHotkeysFromSettings();
 
         InitTrayIcon();
         OverlayLogger.Log("Tray", "Initialized");
@@ -86,7 +85,7 @@ public partial class App : System.Windows.Application
             TryRenderStatusStrip();
         };
 
-        TryInitSettings();
+        // Settings already initialized above for hotkeys
 
         // Present scheduler: checks for dirty state ~60 FPS without busy waiting
         _presentTimer = new DispatcherTimer(DispatcherPriority.Background)
@@ -313,6 +312,7 @@ public partial class App : System.Windows.Application
             var menu = new Forms.ContextMenuStrip();
             menu.Items.Add("Open Calibration Wizard (Ctrl+Alt+C)", null, (_, __) => OpenWizard());
             menu.Items.Add("Capture Current Profile (Ctrl+Alt+P)", null, async (_, __) => await CaptureCurrentProfileAsync());
+            menu.Items.Add("Hotkey Settings...", null, (_, __) => OpenHotkeySettings());
             menu.Items.Add("Exit", null, (_, __) => Shutdown());
             _tray.ContextMenuStrip = menu;
             _tray.Visible = true;
@@ -413,6 +413,45 @@ public partial class App : System.Windows.Application
         catch (System.Exception ex)
         {
             OverlayLogger.Log("Settings.Load.Error", ex.Message);
+        }
+    }
+
+    private void ApplyHotkeysFromSettings()
+    {
+        if (_overlay == null) return;
+        try
+        {
+            bool okTheme = _overlay.RegisterThemeChord(_settings.ThemeHotkey);
+            bool okCapture = _overlay.RegisterCaptureChord(_settings.CaptureHotkey);
+            bool okWizard = _overlay.RegisterWizardChord(_settings.WizardHotkey);
+            OverlayLogger.Log("Hotkey.Register", $"Theme='{_settings.ThemeHotkey}' => {(okTheme?"OK":"FAIL")}; Capture='{_settings.CaptureHotkey}' => {(okCapture?"OK":"FAIL")}; Wizard='{_settings.WizardHotkey}' => {(okWizard?"OK":"FAIL")}");
+        }
+        catch (System.Exception ex)
+        {
+            OverlayLogger.Log("Hotkey.Register.Error", ex.Message);
+        }
+    }
+
+    private async void OpenHotkeySettings()
+    {
+        try
+        {
+            var wnd = new Settings.HotkeySettingsWindow(_settings);
+            wnd.Owner = null;
+            wnd.Saved += async (_, args) =>
+            {
+                // Update settings and persist
+                _settings.ThemeHotkey = args.Theme;
+                _settings.CaptureHotkey = args.Capture;
+                _settings.WizardHotkey = args.Wizard;
+                if (_settingsStore != null) await _settingsStore.SaveAsync(_settings);
+                ApplyHotkeysFromSettings();
+            };
+            wnd.Show();
+        }
+        catch (System.Exception ex)
+        {
+            OverlayLogger.Log("Hotkey.UI.Error", ex.Message);
         }
     }
 

@@ -4040,3 +4040,16 @@ Remember to:
 - [x] ROI list editing + visible handles working.
 - [x] Profiles save/load includes target window info (Title/Class).
 - [x] Capture toast appears with exact saved path and no activation steal.
+
+
+### Phase 4.3 – Hotkey Rebind UI (2025-09-29)
+- [x] Simple Hotkey settings window added; chords persist to appsettings.json and apply at runtime without restart.
+  - Files: src/HSGalaxy.App/Settings/HotkeySettingsWindow.xaml(.cs); src/HSGalaxy.Core/Config/AppSettings.cs; src/HSGalaxy.UI/Native/NativeWindow.cs; src/HSGalaxy.App/App.xaml.cs
+- [x] Tray menu: added 'Hotkey Settings...' entry.
+- [x] Settings schema extended with ThemeHotkey, CaptureHotkey, WizardHotkey.
+- [x] Validation (2025-09-29 21:10:54):
+  - Edited %LOCALAPPDATA%\\HSGalaxy\\config\\appsettings.json to set chords.
+  - Ran app with HSGALAXY_TEST_CAPTURE_ON_START=1; HSGALAXY_EXIT_AFTER_TEST=1.
+  - overlay.log showed Hotkey.Register with per-chord status and capture path.
+- Note: If a chord is already used by another app, registration reports FAIL for that chord; UI allows adjusting.
+
