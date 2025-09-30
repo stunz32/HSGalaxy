@@ -24,37 +24,45 @@ namespace HSGalaxy.Core.OCR
         public async Task<OcrResult> RunOnceAsync(CalibrationProfile profile, Func<Rectangle, Bitmap> capture, CancellationToken ct = default)
         {
             var swTotal = Stopwatch.StartNew();
-            // Compose composite bitmap vertically
             var rois = profile.Regions;
-            int width = 0, height = 0;
-            foreach (var r in rois)
+            // Capture ROI bitmaps
+            var roiBitmaps = new System.Collections.Generic.List<Bitmap>(rois.Count);
+            try
             {
-                width = Math.Max(width, r.Width);
-                height += r.Height;
-            }
-            using var composite = new Bitmap(Math.Max(width, 1), Math.Max(height, 1), PixelFormat.Format32bppPArgb);
-            using (var g = Graphics.FromImage(composite))
-            {
-                g.Clear(Color.Transparent);
-                int y = 0; int idx = 0;
                 foreach (var r in rois)
                 {
-                    using var roiBmp = capture(new Rectangle(r.X, r.Y, r.Width, r.Height));
-                    g.DrawImageUnscaled(roiBmp, 0, y);
-                    y += r.Height;
-                    idx++;
+                    roiBitmaps.Add(capture(new Rectangle(r.X, r.Y, r.Width, r.Height)));
                 }
-            }
+                // Build composite horizontally with gutters/separators
+                var builder = new CompositeBuilder();
+                using var comp = builder.BuildComposite(roiBitmaps);
+                var bytes = CompositeBuilder.EncodeComposite(comp.Composite);
+                var result = await _client.RecognizeAsync(bytes, ct).ConfigureAwait(false);
+                swTotal.Stop();
+                result.Source = _client.Name;
+                result.ElapsedMs = swTotal.Elapsed.TotalMilliseconds;
 
-            using var ms = new MemoryStream();
-            composite.Save(ms, ImageFormat.Png);
-            var bytes = ms.ToArray();
-            var result = await _client.RecognizeAsync(bytes, ct).ConfigureAwait(false);
-            swTotal.Stop();
-            result.Source = _client.Name;
-            result.ElapsedMs = swTotal.Elapsed.TotalMilliseconds;
-            return result;
+                // Map each OCR line back to the ROI index using center point against offsets
+                foreach (var line in result.Lines)
+                {
+                    int cx = line.X + (line.Width > 0 ? line.Width / 2 : 0);
+                    int cy = line.Y + (line.Height > 0 ? line.Height / 2 : 0);
+                    foreach (var kv in comp.Offsets)
+                    {
+                        var rect = kv.Value;
+                        if (cx >= rect.Left && cx < rect.Right && cy >= rect.Top && cy < rect.Bottom)
+                        {
+                            line.RoiIndex = kv.Key;
+                            break;
+                        }
+                    }
+                }
+                return result;
+            }
+            finally
+            {
+                foreach (var b in roiBitmaps) b.Dispose();
+            }
         }
     }
 }
-

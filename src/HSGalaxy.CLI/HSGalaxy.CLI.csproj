@@ -3,6 +3,12 @@
   <ItemGroup>
     <ProjectReference Include="..\HSGalaxy.Core\HSGalaxy.Core.csproj" />
     <ProjectReference Include="..\HSGalaxy.UI\HSGalaxy.UI.csproj" />
+    <!-- Do not reference Azure OCR here to avoid restore cycles in restricted envs -->
+</ItemGroup>
+
+  <ItemGroup>
+    <!-- Separate group to include Azure OCR project output for runtime reflection -->
+    <ProjectReference Include="..\HSGalaxy.OCR.Azure\HSGalaxy.OCR.Azure.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

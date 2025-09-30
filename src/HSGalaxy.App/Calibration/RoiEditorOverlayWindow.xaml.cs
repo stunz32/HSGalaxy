@@ -25,6 +25,9 @@ public partial class RoiEditorOverlayWindow : Window
     private System.Windows.Shapes.Rectangle? _selectedRect;
     private ResizeEdges _resizeMode = ResizeEdges.None;
     private const double Grip = 6.0; // DIP tolerance for edge hit tests
+    private readonly List<(System.Windows.Shapes.Rectangle Handle, ResizeEdges Edges)> _handles = new();
+
+    public event EventHandler? RoisChanged;
 
     [Flags]
     private enum ResizeEdges { None=0, Left=1, Top=2, Right=4, Bottom=8 }
@@ -53,10 +56,12 @@ public partial class RoiEditorOverlayWindow : Window
 
     public void ClearRois()
     {
-        var keep = CanvasRoot.Children.OfType<UIElement>().Where(c => c is not System.Windows.Shapes.Rectangle).ToList();
+        var keep = CanvasRoot.Children.OfType<UIElement>().Where(c => c is not System.Windows.Shapes.Rectangle || _handles.Any(h => h.Handle == c)).ToList();
         CanvasRoot.Children.Clear();
         foreach (var k in keep) CanvasRoot.Children.Add(k);
         _selectedRect = null;
+        UpdateHandles();
+        RoisChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public List<Roi> GetRois()
@@ -66,6 +71,7 @@ public partial class RoiEditorOverlayWindow : Window
         var rois = new List<Roi>();
         foreach (var r in CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>())
         {
+            if (_handles.Any(h => h.Handle == r)) continue; // skip handle visuals
             double x = Canvas.GetLeft(r);
             double y = Canvas.GetTop(r);
             double w = r.Width;
@@ -74,7 +80,9 @@ public partial class RoiEditorOverlayWindow : Window
             int py = _target.Top + (int)Math.Round(y * sy);
             int pw = (int)Math.Round(w * sx);
             int ph = (int)Math.Round(h * sy);
-            rois.Add(new Roi { Id = Guid.NewGuid().ToString("N"), X = px, Y = py, Width = Math.Max(1, pw), Height = Math.Max(1, ph) });
+            var id = r.Tag as string;
+            if (string.IsNullOrWhiteSpace(id)) { id = Guid.NewGuid().ToString("N"); r.Tag = id; }
+            rois.Add(new Roi { Id = id!, X = px, Y = py, Width = Math.Max(1, pw), Height = Math.Max(1, ph) });
         }
         return rois;
     }
@@ -89,18 +97,19 @@ public partial class RoiEditorOverlayWindow : Window
             int rx = roi.X - _target.Left;
             int ry = roi.Y - _target.Top;
             if (roi.Width <= 0 || roi.Height <= 0) continue;
-            var rect = CreateRect();
+            var rect = CreateRect(roi.Id);
             rect.Width = Math.Max(1, roi.Width / sx);
             rect.Height = Math.Max(1, roi.Height / sy);
             Canvas.SetLeft(rect, Math.Max(0, rx / sx));
             Canvas.SetTop(rect, Math.Max(0, ry / sy));
             CanvasRoot.Children.Add(rect);
         }
+        RoisChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private System.Windows.Shapes.Rectangle CreateRect()
+    private System.Windows.Shapes.Rectangle CreateRect(string? id = null)
     {
-        return new System.Windows.Shapes.Rectangle
+        var r = new System.Windows.Shapes.Rectangle
         {
             Stroke = System.Windows.Media.Brushes.Lime,
             Fill = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 0, 255, 0)),
@@ -108,11 +117,25 @@ public partial class RoiEditorOverlayWindow : Window
             RadiusX = 2,
             RadiusY = 2
         };
+        r.Tag = string.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString("N") : id;
+        return r;
     }
 
     private void CanvasRoot_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         _start = e.GetPosition(CanvasRoot);
+        // Check visible handles first for explicit resizing
+        var handleHit = HitHandle(_start);
+        if (handleHit != ResizeEdges.None && _selectedRect != null)
+        {
+            _hitRect = _selectedRect;
+            _resizeMode = handleHit;
+            _draggingResize = true;
+            CanvasRoot.CaptureMouse();
+            e.Handled = true;
+            return;
+        }
+
         _hitRect = HitTest(_start);
         if (_hitRect != null)
         {
@@ -128,6 +151,7 @@ public partial class RoiEditorOverlayWindow : Window
             }
             CanvasRoot.CaptureMouse();
             e.Handled = true;
+            UpdateHandles();
             return;
         }
 
@@ -162,11 +186,13 @@ public partial class RoiEditorOverlayWindow : Window
             double dy = p.Y - _start.Y;
             MoveRect(_hitRect, dx, dy);
             _start = p;
+            UpdateHandles();
         }
         else if (_draggingResize && _hitRect != null)
         {
             ResizeRect(_hitRect, p);
             _start = p;
+            UpdateHandles();
         }
     }
 
@@ -179,6 +205,15 @@ public partial class RoiEditorOverlayWindow : Window
         _draggingResize = false;
         _resizeMode = ResizeEdges.None;
         Mouse.Capture(null);
+        if (_currentRect != null)
+        {
+            // Finished creating a rectangle
+            RoisChanged?.Invoke(this, EventArgs.Empty);
+        }
+        else if (_hitRect != null || _selectedRect != null)
+        {
+            RoisChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void CanvasRoot_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -191,6 +226,8 @@ public partial class RoiEditorOverlayWindow : Window
             {
                 CanvasRoot.Children.Remove(last);
                 if (_selectedRect == last) _selectedRect = null;
+                UpdateHandles();
+                RoisChanged?.Invoke(this, EventArgs.Empty);
             }
             return;
         }
@@ -211,6 +248,7 @@ public partial class RoiEditorOverlayWindow : Window
                 else if (e.Key == Key.Up) { _selectedRect.Height = Math.Max(1, _selectedRect.Height - step); e.Handled = true; }
                 else if (e.Key == Key.Down) { _selectedRect.Height = Math.Max(1, _selectedRect.Height + step); e.Handled = true; }
             }
+            if (e.Handled) { UpdateHandles(); RoisChanged?.Invoke(this, EventArgs.Empty); }
         }
     }
 
@@ -286,5 +324,113 @@ public partial class RoiEditorOverlayWindow : Window
         Canvas.SetTop(rect, ny);
         rect.Width = Math.Max(1, nw);
         rect.Height = Math.Max(1, nh);
+    }
+
+    private ResizeEdges HitHandle(System.Windows.Point p)
+    {
+        foreach (var h in _handles)
+        {
+            double x = Canvas.GetLeft(h.Handle);
+            double y = Canvas.GetTop(h.Handle);
+            if (p.X >= x && p.X <= x + h.Handle.Width && p.Y >= y && p.Y <= y + h.Handle.Height)
+                return h.Edges;
+        }
+        return ResizeEdges.None;
+    }
+
+    private void EnsureHandles()
+    {
+        if (_handles.Count == 8) return;
+        // Create 8 handles around selection
+        _handles.Clear();
+        ResizeEdges[] edges = new[]
+        {
+            ResizeEdges.Left | ResizeEdges.Top,
+            ResizeEdges.Top,
+            ResizeEdges.Right | ResizeEdges.Top,
+            ResizeEdges.Right,
+            ResizeEdges.Right | ResizeEdges.Bottom,
+            ResizeEdges.Bottom,
+            ResizeEdges.Left | ResizeEdges.Bottom,
+            ResizeEdges.Left
+        };
+        for (int i = 0; i < 8; i++)
+        {
+            var h = new System.Windows.Shapes.Rectangle
+            {
+                Width = 8,
+                Height = 8,
+                Fill = System.Windows.Media.Brushes.White,
+                Stroke = System.Windows.Media.Brushes.Black,
+                StrokeThickness = 1,
+                Visibility = Visibility.Collapsed
+            };
+            CanvasRoot.Children.Add(h);
+            _handles.Add((h, edges[i]));
+        }
+    }
+
+    private void UpdateHandles()
+    {
+        EnsureHandles();
+        foreach (var (handle, _) in _handles)
+        {
+            handle.Visibility = Visibility.Collapsed;
+        }
+        if (_selectedRect == null) return;
+        double x = Canvas.GetLeft(_selectedRect);
+        double y = Canvas.GetTop(_selectedRect);
+        double w = _selectedRect.Width;
+        double h = _selectedRect.Height;
+        // Positions: TL, T, TR, R, BR, B, BL, L
+        var pts = new (double X, double Y)[]
+        {
+            (x-4, y-4),
+            (x + w/2 - 4, y-4),
+            (x + w - 4, y-4),
+            (x + w - 4, y + h/2 - 4),
+            (x + w - 4, y + h - 4),
+            (x + w/2 - 4, y + h - 4),
+            (x-4, y + h - 4),
+            (x-4, y + h/2 - 4)
+        };
+        for (int i = 0; i < _handles.Count; i++)
+        {
+            var (handle, _) = _handles[i];
+            Canvas.SetLeft(handle, Math.Max(0, Math.Min(CanvasRoot.Width - handle.Width, pts[i].X)));
+            Canvas.SetTop(handle, Math.Max(0, Math.Min(CanvasRoot.Height - handle.Height, pts[i].Y)));
+            handle.Visibility = Visibility.Visible;
+        }
+    }
+
+    // External helpers for wizard integration
+    public void RenameRoi(string oldId, string newId)
+    {
+        if (string.IsNullOrWhiteSpace(newId)) return;
+        foreach (var r in CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>())
+        {
+            if (_handles.Any(h => h.Handle == r)) continue;
+            if ((r.Tag as string) == oldId) { r.Tag = newId; RoisChanged?.Invoke(this, EventArgs.Empty); return; }
+        }
+    }
+
+    public void DeleteRoi(string id)
+    {
+        var rect = CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>()
+            .FirstOrDefault(r => !_handles.Any(h => h.Handle == r) && (r.Tag as string) == id);
+        if (rect != null)
+        {
+            CanvasRoot.Children.Remove(rect);
+            if (_selectedRect == rect) _selectedRect = null;
+            UpdateHandles();
+            RoisChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public void SelectRoi(string id)
+    {
+        _selectedRect = CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>()
+            .FirstOrDefault(r => !_handles.Any(h => h.Handle == r) && (r.Tag as string) == id);
+        UpdateHandles();
     }
 }

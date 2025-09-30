@@ -1,8 +1,12 @@
 using System;
 
-
 namespace HSGalaxy.Core.OCR
 {
+    /// <summary>
+    /// Chooses the best available OCR client at runtime.
+    /// Prefers Azure (via reflection) when HSGALAXY_AZURE_VISION_* env vars are present,
+    /// otherwise falls back to the deterministic simulated client.
+    /// </summary>
     public static class OcrClientSelector
     {
         public static IOcrClient Create()
@@ -15,30 +19,19 @@ namespace HSGalaxy.Core.OCR
             }
             return new SimulatedOcrClient();
         }
-    }
-}
-
-
-
-
-
 
         private static IOcrClient? CreateAzureIfConfigured()
         {
             try
             {
-                var endpoint = Environment.GetEnvironmentVariable("HSGALAXY_AZURE_VISION_ENDPOINT");
-                var apiKey = Environment.GetEnvironmentVariable("HSGALAXY_AZURE_VISION_KEY");
-                if (!string.IsNullOrWhiteSpace(endpoint) && !string.IsNullOrWhiteSpace(apiKey))
-                {
-                    // Late-bind to avoid project circular reference
-                    var t = Type.GetType("HSGalaxy.OCR.Azure.AzureVisionV4Client, HSGalaxy.OCR.Azure", throwOnError: false);
-                    if (t != null)
-                    {
-                        return (IOcrClient?)Activator.CreateInstance(t);
-                    }
-                }
+                // Late-bind to avoid Core -> Azure project reference
+                var t4 = Type.GetType("HSGalaxy.OCR.Azure.AzureVisionV4Client, HSGalaxy.OCR.Azure", throwOnError: false);
+                if (t4 != null) return (IOcrClient?)Activator.CreateInstance(t4);
+                var t32 = Type.GetType("HSGalaxy.OCR.Azure.AzureVisionV32Client, HSGalaxy.OCR.Azure", throwOnError: false);
+                if (t32 != null) return (IOcrClient?)Activator.CreateInstance(t32);
             }
-            catch { }
+            catch { /* ignore and fall back */ }
             return null;
         }
+    }
+}

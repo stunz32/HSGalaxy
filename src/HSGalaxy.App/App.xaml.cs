@@ -6,6 +6,7 @@ using HSGalaxy.UI.Rendering;
 using System.Windows.Threading;
 using HSGalaxy.Diagnostics;
 using HSGalaxy.UI.Validation;
+using HSGalaxy.App.UI;
 using HSGalaxy.Core.Config;
 using HSGalaxy.Core.Calibration;
 using HSGalaxy.App.Calibration;
@@ -34,6 +35,23 @@ public partial class App : System.Windows.Application
         base.OnStartup(e);
         // Ensure app stays alive without a visible WPF window
         this.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+        // Safe Wizard mode: skip overlay entirely when explicitly requested
+        var disableOverlay = string.Equals(Environment.GetEnvironmentVariable("HSGALAXY_DISABLE_OVERLAY"), "1", StringComparison.OrdinalIgnoreCase);
+        if (disableOverlay)
+        {
+            OverlayLogger.Log("Startup", "SafeWizardMode: DISABLE_OVERLAY=1");
+            TryInitSettings();
+            OpenWizard();
+            TryScheduleWizardSelfTest();
+            // In this mode, keep the app alive by binding shutdown to wizard window
+            if (_wizard != null)
+            {
+                this.ShutdownMode = ShutdownMode.OnMainWindowClose;
+                this.MainWindow = _wizard;
+            }
+            return;
+        }
         // Create click-through overlay window
         _overlay = new HSGalaxy.UI.Native.NativeWindow();
         _overlay.CreateOverlayWindow();
@@ -68,18 +86,7 @@ public partial class App : System.Windows.Application
             TryRenderStatusStrip();
         };
 
-        // Load minimal app settings (current profile)
-        try
-        {
-            var cfgFolder = GetConfigFolder();
-            var cfgPath = System.IO.Path.Combine(cfgFolder, "appsettings.json");
-            _settingsStore = new JsonConfigStore<AppSettings>(cfgPath);
-            _settings = _settingsStore.LoadAsync().GetAwaiter().GetResult();
-        }
-        catch (System.Exception ex)
-        {
-            OverlayLogger.Log("Settings.Load.Error", ex.Message);
-        }
+        TryInitSettings();
 
         // Present scheduler: checks for dirty state ~60 FPS without busy waiting
         _presentTimer = new DispatcherTimer(DispatcherPriority.Background)
@@ -91,6 +98,8 @@ public partial class App : System.Windows.Application
 
         // Optionally auto-open wizard (first run, or env flag)
         TryAutoOpenWizard();
+        TryScheduleWizardSelfTest();
+        TryScheduleAutoCaptureForTest();
 
         // Optional: stress test via env var (HSGALAXY_STRESS_PRESENTS=1)
         var stress = Environment.GetEnvironmentVariable("HSGALAXY_STRESS_PRESENTS");
@@ -233,6 +242,47 @@ public partial class App : System.Windows.Application
         }
     }
 
+    private void TryScheduleWizardSelfTest()
+    {
+        try
+        {
+            var selftest = Environment.GetEnvironmentVariable("HSGALAXY_WIZARD_SELFTEST");
+            if (!string.Equals(selftest, "1", StringComparison.OrdinalIgnoreCase)) return;
+            var t = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(1200) };
+            t.Tick += (_, __) =>
+            {
+                t.Stop();
+                bool found = false;
+                try
+                {
+                    var picker = new HSGalaxy.UI.Capture.WindowPicker();
+                    foreach (var w in picker.Enumerate())
+                    {
+                        if (w.Title?.IndexOf("Calibration Wizard", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            found = true; break;
+                        }
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    OverlayLogger.Log("Wizard.SelfTest.Error", ex.Message);
+                }
+                OverlayLogger.Log("Wizard.SelfTest", found ? "PASS" : "FAIL");
+                var autoExit = Environment.GetEnvironmentVariable("HSGALAXY_EXIT_AFTER_TEST");
+                if (string.Equals(autoExit, "1", StringComparison.OrdinalIgnoreCase))
+                {
+                    try { Shutdown(); } catch { }
+                }
+            };
+            t.Start();
+        }
+        catch (System.Exception ex)
+        {
+            OverlayLogger.Log("Wizard.SelfTest.InitError", ex.Message);
+        }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         if (_tray != null) { try { _tray.Visible = false; _tray.Dispose(); } catch { } _tray = null; }
@@ -324,6 +374,14 @@ public partial class App : System.Windows.Application
                 _wizard = new CalibrationWizardWindow();
                 _wizard.Owner = null; // modeless
                 _wizard.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                _wizard.Loaded += (_, __) =>
+                {
+                    try
+                    {
+                        OverlayLogger.Log("Wizard", $"Loaded @ ({_wizard.Left:F0},{_wizard.Top:F0}) Size=({_wizard.Width:F0}x{_wizard.Height:F0})");
+                    }
+                    catch { }
+                };
                 _wizard.Closed += (_, __) => { _wizard = null; _overlay?.SetVisible(true); };
                 _wizard.Show();
                 OverlayLogger.Log("Wizard", "Opened");
@@ -338,6 +396,23 @@ public partial class App : System.Windows.Application
         catch (System.Exception ex)
         {
             OverlayLogger.Log("Wizard.Error", ex.Message);
+        }
+    }
+
+    private void TryInitSettings()
+    {
+        // Load minimal app settings (current profile)
+        try
+        {
+            var cfgFolder = GetConfigFolder();
+            var cfgPath = System.IO.Path.Combine(cfgFolder, "appsettings.json");
+            _settingsStore = new JsonConfigStore<AppSettings>(cfgPath);
+            _settings = _settingsStore.LoadAsync().GetAwaiter().GetResult();
+            OverlayLogger.Log("Settings.Load", $"CurrentProfile='{_settings.CurrentProfile}'");
+        }
+        catch (System.Exception ex)
+        {
+            OverlayLogger.Log("Settings.Load.Error", ex.Message);
         }
     }
 
@@ -365,6 +440,22 @@ public partial class App : System.Windows.Application
         {
             OverlayLogger.Log("Wizard.AutoOpen.Error", ex.Message);
         }
+    }
+
+    private void TryScheduleAutoCaptureForTest()
+    {
+        try
+        {
+            var env = Environment.GetEnvironmentVariable("HSGALAXY_TEST_CAPTURE_ON_START");
+            if (string.Equals(env, "1", StringComparison.OrdinalIgnoreCase))
+            {
+                // Delay slightly to allow settings to load
+                var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
+                t.Tick += async (_, __) => { t.Stop(); await CaptureCurrentProfileAsync(); };
+                t.Start();
+            }
+        }
+        catch { }
     }
 
     private async System.Threading.Tasks.Task CaptureCurrentProfileAsync()
@@ -415,6 +506,15 @@ public partial class App : System.Windows.Application
             var path = System.IO.Path.Combine(outDir, $"hotkey_{Sanitize(name)}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
             composite.Save(path, System.Drawing.Imaging.ImageFormat.Png);
             OverlayLogger.Log("Calib.Capture", path);
+            ToastService.Show($"Capture saved: {path}");
+            // Optional auto-exit for deterministic testing
+            var exit = Environment.GetEnvironmentVariable("HSGALAXY_EXIT_AFTER_TEST");
+            if (string.Equals(exit, "1", StringComparison.OrdinalIgnoreCase))
+            {
+                var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+                t.Tick += (_, __) => { t.Stop(); try { this.Shutdown(); } catch { } };
+                t.Start();
+            }
         }
         catch (System.Exception ex)
         {

@@ -55,6 +55,29 @@ Press and drag on the overlay to create a ROI. Drag inside a ROI to move it. Pre
                         <Button Content="Capture Proof PNG" Margin="6,0,0,0" Click="BtnCaptureProof_Click"/>
                     </StackPanel>
                     <TextBlock x:Name="TxtStatus" Margin="0,8,0,0" Foreground="#FFFF0A70"/>
+
+                    <GroupBox Header="ROIs (id / position / size)" Margin="0,10,0,0">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
+                                <Button x:Name="BtnDeleteRoi" Content="Delete" Click="BtnDeleteRoi_Click"/>
+                            </StackPanel>
+                            <ListView x:Name="LstRois" Height="200" SelectionChanged="LstRois_SelectionChanged">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Id" Width="140">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBox Text="{Binding Id, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" LostFocus="TxtRoiId_LostFocus" KeyDown="TxtRoiId_KeyDown"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Pos" Width="110" DisplayMemberBinding="{Binding Pos}"/>
+                                        <GridViewColumn Header="Size" Width="90" DisplayMemberBinding="{Binding Size}"/>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </DockPanel>
+                    </GroupBox>
                 </StackPanel>
             </GroupBox>
         </Grid>

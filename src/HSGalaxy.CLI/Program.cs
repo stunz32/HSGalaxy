@@ -156,6 +156,8 @@ class Program
         var profile = new CalibrationProfile
         {
             Name = "SelfTest",
+            TargetTitle = "CLI-Title",
+            TargetClass = "CLI-Class",
             Regions =
             {
                 new Roi{ Id="a", X=10, Y=10, Width=100, Height=60},
@@ -167,6 +169,10 @@ class Program
         var loaded = await CalibrationManager.LoadAsync(folder, "SelfTest");
         bool ok = loaded != null && loaded!.Regions.Count == profile.Regions.Count;
         Console.WriteLine(ok ? "Calibration save/load: PASS" : "Calibration save/load: FAIL");
+        if (loaded != null)
+        {
+            Console.WriteLine($"Loaded TargetTitle='{loaded.TargetTitle}' TargetClass='{loaded.TargetClass}'");
+        }
         return ok ? 0 : 1;
     }
 

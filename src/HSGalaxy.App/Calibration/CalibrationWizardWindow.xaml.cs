@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ public partial class CalibrationWizardWindow : Window
     private readonly WindowPicker _picker = new WindowPicker();
     private HSGalaxy.UI.Capture.WindowPicker.WindowInfo? _selected;
     private RoiEditorOverlayWindow? _overlay;
+    private ObservableCollection<RoiRow> _roiRows = new();
 
     public CalibrationWizardWindow()
     {
@@ -81,11 +83,13 @@ public partial class CalibrationWizardWindow : Window
         {
             _overlay = new RoiEditorOverlayWindow(_selected);
             _overlay.Show();
+            _overlay.RoisChanged += (_, __) => RefreshRoiList();
         }
         else
         {
             _overlay.Focus();
         }
+        RefreshRoiList();
     }
 
     private async void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -96,7 +100,7 @@ public partial class CalibrationWizardWindow : Window
             return;
         }
         var name = string.IsNullOrWhiteSpace(TxtProfile.Text) ? "Default" : TxtProfile.Text.Trim();
-        var profile = new CalibrationProfile { Name = name };
+        var profile = new CalibrationProfile { Name = name, TargetTitle = _selected?.Title, TargetClass = _selected?.Class };
         profile.Regions.AddRange(_overlay.GetRois());
         string folder = GetCalibrationFolder();
         await CalibrationManager.SaveAsync(profile, folder);
@@ -118,6 +122,7 @@ public partial class CalibrationWizardWindow : Window
         _overlay!.SetRois(profile.Regions);
         await SaveCurrentProfileNameAsync(name);
         SetStatus($"Loaded profile '{name}'.");
+        RefreshRoiList();
     }
 
     private void BtnClear_Click(object sender, RoutedEventArgs e)
@@ -125,6 +130,7 @@ public partial class CalibrationWizardWindow : Window
         if (_overlay == null) { SetStatus("Overlay not open."); return; }
         _overlay.ClearRois();
         SetStatus("ROIs cleared.");
+        RefreshRoiList();
     }
 
     private async void BtnCaptureProof_Click(object sender, RoutedEventArgs e)
@@ -191,4 +197,88 @@ public partial class CalibrationWizardWindow : Window
     }
 
     private void SetStatus(string text) => TxtStatus.Text = text;
+
+    // ROI list integration
+    private void RefreshRoiList()
+    {
+        if (_overlay == null)
+        {
+            _roiRows = new();
+            LstRois.ItemsSource = _roiRows;
+            return;
+        }
+        var list = _overlay.GetRois()
+            .Select(r => new RoiRow(r.Id, r.X, r.Y, r.Width, r.Height))
+            .ToList();
+        _roiRows = new ObservableCollection<RoiRow>(list);
+        LstRois.ItemsSource = _roiRows;
+    }
+
+    private void LstRois_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_overlay == null) return;
+        if (LstRois.SelectedItem is RoiRow row)
+        {
+            _overlay.SelectRoi(row.Id);
+        }
+    }
+
+    private void BtnDeleteRoi_Click(object sender, RoutedEventArgs e)
+    {
+        if (_overlay == null) return;
+        if (LstRois.SelectedItem is RoiRow row)
+        {
+            _overlay.DeleteRoi(row.Id);
+            RefreshRoiList();
+        }
+    }
+
+    private void TxtRoiId_LostFocus(object sender, RoutedEventArgs e)
+    {
+        TryRenameFromEditor(sender);
+    }
+
+    private void TxtRoiId_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Enter)
+        {
+            TryRenameFromEditor(sender);
+            e.Handled = true;
+        }
+    }
+
+    private void TryRenameFromEditor(object sender)
+    {
+        if (_overlay == null) return;
+        if (sender is System.Windows.Controls.TextBox tb && tb.DataContext is RoiRow row)
+        {
+            var newId = tb.Text?.Trim() ?? string.Empty;
+            if (!string.Equals(newId, row.Id, StringComparison.Ordinal))
+            {
+                // Two-way binding already updated row.Id; row.OriginalId is the previous value
+            }
+            if (!string.IsNullOrWhiteSpace(newId) && !string.Equals(row.OriginalId, newId, StringComparison.Ordinal))
+            {
+                _overlay.RenameRoi(row.OriginalId, newId);
+                row.OriginalId = newId;
+                RefreshRoiList();
+            }
+        }
+    }
+
+    private sealed class RoiRow
+    {
+        public RoiRow(string id, int x, int y, int w, int h)
+        {
+            Id = id; OriginalId = id; X = x; Y = y; Width = w; Height = h;
+        }
+        public string Id { get; set; }
+        public string OriginalId { get; set; }
+        public string Pos => $"{X},{Y}";
+        public string Size => $"{Width}x{Height}";
+        public int X { get; }
+        public int Y { get; }
+        public int Width { get; }
+        public int Height { get; }
+    }
 }

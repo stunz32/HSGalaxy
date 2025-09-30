@@ -1,0 +1,11 @@
+<Window x:Class="HSGalaxy.App.UI.ToastWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        ShowInTaskbar="False" WindowStyle="None" ResizeMode="NoResize"
+        AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowActivated="False" Focusable="False">
+    <Border CornerRadius="6" Background="#CC222222" Padding="12" BorderBrush="#55FFFFFF" BorderThickness="1">
+        <TextBlock x:Name="Txt" TextWrapping="Wrap" Foreground="#F0F0F0"/>
+    </Border>
+</Window>
+

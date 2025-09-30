@@ -20,9 +20,8 @@
     <Folder Include="Config\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\HSGalaxy.OCR.Azure\HSGalaxy.OCR.Azure.csproj" />
-  </ItemGroup>
+  <!-- Intentionally avoid direct reference to OCR.Azure; Core uses reflection to load it when available. -->
 
 </Project>
+
 

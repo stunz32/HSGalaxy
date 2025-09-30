@@ -4,9 +4,7 @@
     <ProjectReference Include="..\HSGalaxy.Core\HSGalaxy.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Azure.AI.Vision.ImageAnalysis" Version="1.0.0" />
-  </ItemGroup>
+  <!-- Remove heavy Azure package; we use lightweight HTTP client to call REST API -->
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
