@@ -8,6 +8,9 @@ namespace HSGalaxy.Core.Calibration
         // Persist target window identity to simplify re-attachment
         public string? TargetTitle { get; set; }
         public string? TargetClass { get; set; }
+        // Original top-left of the target when ROIs were saved (absolute screen px)
+        public int? TargetLeft { get; set; }
+        public int? TargetTop { get; set; }
         public List<Roi> Regions { get; set; } = new List<Roi>();
     }
 

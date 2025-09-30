@@ -4053,3 +4053,9 @@ Remember to:
   - overlay.log showed Hotkey.Register with per-chord status and capture path.
 - Note: If a chord is already used by another app, registration reports FAIL for that chord; UI allows adjusting.
 
+### Phase 4.4 – Re-attach by Window Identity (2025-09-29)
+- [x] Save now records TargetLeft/Top; load/CLI re-adjust ROIs by delta to current window position.
+- [x] CLI updated to re-attach when capturing profiles if a matching window is found.
+- Validation:
+  - Command: dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile wizard1
+  - Output: Reattached to window '<title>' with offset (dx,dy). Composite saved to: %TEMP%\HSGalaxy\profile_wizard1_YYYYMMDD_HHMMSS.png

@@ -386,6 +386,25 @@ class Program
             Console.WriteLine($"Profile '{name}' not found in {folder}");
             return 1;
         }
+        // Reattach by offset if profile contains window identity and original origin
+        try
+        {
+            if ((!string.IsNullOrWhiteSpace(profile.TargetTitle) || !string.IsNullOrWhiteSpace(profile.TargetClass)) && profile.TargetLeft.HasValue && profile.TargetTop.HasValue)
+            {
+                var picker = new HSGalaxy.UI.Capture.WindowPicker();
+                var match = picker.Enumerate().FirstOrDefault(w =>
+                    (!string.IsNullOrWhiteSpace(profile.TargetTitle) && w.Title.IndexOf(profile.TargetTitle, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                    (!string.IsNullOrWhiteSpace(profile.TargetClass) && w.Class.IndexOf(profile.TargetClass, StringComparison.OrdinalIgnoreCase) >= 0));
+                if (match != null)
+                {
+                    int dx = match.Left - profile.TargetLeft.Value;
+                    int dy = match.Top - profile.TargetTop.Value;
+                    profile.Regions = profile.Regions.Select(r => new Roi { Id = r.Id, X = r.X + dx, Y = r.Y + dy, Width = r.Width, Height = r.Height }).ToList();
+                    Console.WriteLine($"Reattached to window '{match.Title}' with offset ({dx},{dy}).");
+                }
+            }
+        }
+        catch { }
         using var cap = new CaptureManager();
         int width = 0, height = 0;
         foreach (var r in profile.Regions) { width = Math.Max(width, r.Width); height += r.Height; }

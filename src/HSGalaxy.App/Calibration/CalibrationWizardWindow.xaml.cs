@@ -100,7 +100,7 @@ public partial class CalibrationWizardWindow : Window
             return;
         }
         var name = string.IsNullOrWhiteSpace(TxtProfile.Text) ? "Default" : TxtProfile.Text.Trim();
-        var profile = new CalibrationProfile { Name = name, TargetTitle = _selected?.Title, TargetClass = _selected?.Class };
+        var profile = new CalibrationProfile { Name = name, TargetTitle = _selected?.Title, TargetClass = _selected?.Class, TargetLeft = _selected?.Left, TargetTop = _selected?.Top };
         profile.Regions.AddRange(_overlay.GetRois());
         string folder = GetCalibrationFolder();
         await CalibrationManager.SaveAsync(profile, folder);
@@ -119,6 +119,29 @@ public partial class CalibrationWizardWindow : Window
             return;
         }
         EnsureOverlay();
+        // If profile has target identity, attempt to re-attach by offset
+        if (!string.IsNullOrWhiteSpace(profile.TargetTitle) || !string.IsNullOrWhiteSpace(profile.TargetClass))
+        {
+            var picker = new WindowPicker();
+            var match = picker.Enumerate().FirstOrDefault(w =>
+                (!string.IsNullOrWhiteSpace(profile.TargetTitle) && w.Title.IndexOf(profile.TargetTitle, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (!string.IsNullOrWhiteSpace(profile.TargetClass) && w.Class.IndexOf(profile.TargetClass, StringComparison.OrdinalIgnoreCase) >= 0));
+            if (match != null)
+            {
+                int dx = 0, dy = 0;
+                if (profile.TargetLeft.HasValue && profile.TargetTop.HasValue)
+                {
+                    dx = match.Left - profile.TargetLeft.Value;
+                    dy = match.Top - profile.TargetTop.Value;
+                }
+                var adjusted = profile.Regions.Select(r => new Roi { Id = r.Id, X = r.X + dx, Y = r.Y + dy, Width = r.Width, Height = r.Height }).ToList();
+                _overlay = new RoiEditorOverlayWindow(match);
+                _overlay.Show();
+                _overlay.SetRois(adjusted);
+                SetStatus($"Loaded and attached to '{match.Title}'. Offset ({dx},{dy}).");
+                return;
+            }
+        }
         _overlay!.SetRois(profile.Regions);
         await SaveCurrentProfileNameAsync(name);
         SetStatus($"Loaded profile '{name}'.");
