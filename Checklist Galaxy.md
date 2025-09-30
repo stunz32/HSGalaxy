@@ -4087,3 +4087,9 @@ Remember to:
 - Validation:
   - Open wizard → draw/move/resize rectangles → observe snapping and live size label updates.
   - Try renaming a ROI to an existing Id → status shows warning and original Id remains.
+### Phase 4.8 – Wizard Test OCR (2025-09-29)
+- [x] Added Test OCR panel in Wizard: Run OCR, Copy All, Save Results (TSV).
+- [x] Uses OcrPipeline with Azure when configured (via env), else simulated client.
+- Validation:
+  - Open wizard → draw a few ROIs → Run OCR. Meta shows Source and Elapsed. List shows ROI, average confidence, and concatenated text.
+  - Copy All copies TSV to clipboard; Save Results writes to %TEMP%\HSGalaxy\ocr_<name>_<timestamp>.tsv.

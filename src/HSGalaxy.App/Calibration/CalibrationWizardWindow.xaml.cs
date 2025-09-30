@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using HSGalaxy.Core.Calibration;
 using HSGalaxy.Core.Config;
 using HSGalaxy.UI.Capture;
+using HSGalaxy.Core.OCR;
 
 namespace HSGalaxy.App.Calibration;
 
@@ -195,6 +196,79 @@ public partial class CalibrationWizardWindow : Window
         _selected = match;
         SetStatus($"Reattached to '{match.Title}'. Offset ({dx},{dy}).");
         RefreshRoiList();
+    }
+
+    private async void BtnRunOcr_Click(object sender, RoutedEventArgs e)
+    {
+        if (_overlay == null) { SetStatus("Overlay not open."); return; }
+        var rois = _overlay.GetRois();
+        if (rois.Count == 0) { SetStatus("No ROIs to OCR."); return; }
+        var profile = new CalibrationProfile { Name = string.IsNullOrWhiteSpace(TxtProfile.Text) ? "Default" : TxtProfile.Text.Trim() };
+        profile.Regions.AddRange(rois);
+        var client = OcrClientSelector.Create();
+        var pipeline = new OcrPipeline(client);
+        using var cap = new HSGalaxy.UI.Capture.CaptureManager();
+        var result = await pipeline.RunOnceAsync(profile, r => cap.Capture(new System.Drawing.Rectangle(r.X, r.Y, r.Width, r.Height)));
+        var list = new System.Collections.ObjectModel.ObservableCollection<OcrRow>();
+        for (int i = 0; i < rois.Count; i++)
+        {
+            string id = rois[i].Id ?? i.ToString();
+            var lines = result.Lines.FindAll(l => l.RoiIndex == i);
+            if (lines.Count == 0)
+            {
+                list.Add(new OcrRow(id, "0.00", ""));
+            }
+            else
+            {
+                float avg = 0f; foreach (var ln in lines) avg += ln.Confidence; avg /= lines.Count;
+                string text = string.Join(" ", lines.ConvertAll(l => l.Text));
+                list.Add(new OcrRow(id, avg.ToString("F2"), text));
+            }
+        }
+        LstOcr.ItemsSource = list;
+        TxtOcrMeta.Text = $"Source:{result.Source}  Elapsed:{result.ElapsedMs:F1}ms  Lines:{result.Lines.Count}";
+        SetStatus("OCR run complete.");
+    }
+
+    private void BtnCopyAll_Click(object sender, RoutedEventArgs e)
+    {
+        if (LstOcr.Items.Count == 0) { SetStatus("No OCR results to copy."); return; }
+        var sb = new System.Text.StringBuilder();
+        foreach (var it in LstOcr.Items)
+        {
+            if (it is OcrRow row) sb.AppendLine($"{row.RoiId}\t{row.Confidence}\t{row.Text}");
+        }
+        try { System.Windows.Clipboard.SetText(sb.ToString()); SetStatus("OCR results copied to clipboard."); }
+        catch { SetStatus("Failed to access clipboard."); }
+    }
+
+    private async void BtnSaveResults_Click(object sender, RoutedEventArgs e)
+    {
+        if (LstOcr.Items.Count == 0) { SetStatus("No OCR results to save."); return; }
+        try
+        {
+            var folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HSGalaxy");
+            System.IO.Directory.CreateDirectory(folder);
+            var name = string.IsNullOrWhiteSpace(TxtProfile.Text) ? "Default" : TxtProfile.Text.Trim();
+            var path = System.IO.Path.Combine(folder, $"ocr_{Sanitize(name)}_{DateTime.Now:yyyyMMdd_HHmmss}.tsv");
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("ROI\tConf\tText");
+            foreach (var it in LstOcr.Items) if (it is OcrRow row) sb.AppendLine($"{row.RoiId}\t{row.Confidence}\t{row.Text}");
+            await System.IO.File.WriteAllTextAsync(path, sb.ToString(), System.Text.Encoding.UTF8);
+            SetStatus($"Saved OCR results to: {path}");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Save failed: {ex.Message}");
+        }
+    }
+
+    private sealed class OcrRow
+    {
+        public OcrRow(string roiId, string conf, string text) { RoiId = roiId; Confidence = conf; Text = text; }
+        public string RoiId { get; }
+        public string Confidence { get; }
+        public string Text { get; }
     }
 
     private async void BtnCaptureProof_Click(object sender, RoutedEventArgs e)

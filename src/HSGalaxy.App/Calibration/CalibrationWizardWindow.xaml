@@ -79,6 +79,26 @@ Press and drag on the overlay to create a ROI. Drag inside a ROI to move it. Pre
                             </ListView>
                         </DockPanel>
                     </GroupBox>
+
+                    <GroupBox Header="Test OCR" Margin="0,10,0,0">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
+                                <Button Content="Run OCR" Click="BtnRunOcr_Click"/>
+                                <Button Content="Copy All" Margin="6,0,0,0" Click="BtnCopyAll_Click"/>
+                                <Button Content="Save Results" Margin="6,0,0,0" Click="BtnSaveResults_Click"/>
+                                <TextBlock x:Name="TxtOcrMeta" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <ListView x:Name="LstOcr" Height="200">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="ROI" Width="80" DisplayMemberBinding="{Binding RoiId}"/>
+                                        <GridViewColumn Header="Conf" Width="60" DisplayMemberBinding="{Binding Confidence}"/>
+                                        <GridViewColumn Header="Text" Width="320" DisplayMemberBinding="{Binding Text}"/>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </DockPanel>
+                    </GroupBox>
                 </StackPanel>
             </GroupBox>
         </Grid>
