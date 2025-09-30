@@ -43,6 +43,7 @@
                         <TextBlock Text="Profile:" VerticalAlignment="Center"/>
                         <TextBox x:Name="TxtProfile" Width="200" Margin="6,0,0,0" Text="Default"/>
                         <Button Content="Load" Margin="6,0,0,0" Click="BtnLoad_Click"/>
+                        <Button Content="Reattach" Margin="6,0,0,0" Click="BtnReattach_Click"/>
                         <Button Content="Save" Margin="6,0,0,0" Click="BtnSave_Click"/>
                         <Button Content="Clear ROIs" Margin="6,0,0,0" Click="BtnClear_Click"/>
                     </StackPanel>

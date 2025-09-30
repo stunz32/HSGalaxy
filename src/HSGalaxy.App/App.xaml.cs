@@ -525,6 +525,33 @@ public partial class App : System.Windows.Application
                 OverlayLogger.Log("Calib.Capture", $"Profile '{name}' missing or empty.");
                 return;
             }
+            // Try reattach: if profile has identity + saved origin, offset ROIs by current window delta
+            try
+            {
+                if ((!string.IsNullOrWhiteSpace(profile.TargetTitle) || !string.IsNullOrWhiteSpace(profile.TargetClass)) && profile.TargetLeft.HasValue && profile.TargetTop.HasValue)
+                {
+                    var picker = new HSGalaxy.UI.Capture.WindowPicker();
+                    var match = picker.Enumerate().FirstOrDefault(w =>
+                        (!string.IsNullOrWhiteSpace(profile.TargetTitle) && w.Title.IndexOf(profile.TargetTitle, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                        (!string.IsNullOrWhiteSpace(profile.TargetClass) && w.Class.IndexOf(profile.TargetClass, StringComparison.OrdinalIgnoreCase) >= 0));
+                    if (match != null)
+                    {
+                        int dx = match.Left - profile.TargetLeft.Value;
+                        int dy = match.Top - profile.TargetTop.Value;
+                        profile = new CalibrationProfile
+                        {
+                            Name = profile.Name,
+                            TargetTitle = profile.TargetTitle,
+                            TargetClass = profile.TargetClass,
+                            TargetLeft = match.Left,
+                            TargetTop = match.Top,
+                            Regions = profile.Regions.Select(r => new Roi { Id = r.Id, X = r.X + dx, Y = r.Y + dy, Width = r.Width, Height = r.Height }).ToList()
+                        };
+                        OverlayLogger.Log("Calib.Attach", $"Reattached to '{match.Title}' offset=({dx},{dy}).");
+                    }
+                }
+            }
+            catch { }
             using var cap = new HSGalaxy.UI.Capture.CaptureManager();
             int width = 0, height = 0;
             foreach (var r in profile.Regions) { width = Math.Max(width, r.Width); height += r.Height; }

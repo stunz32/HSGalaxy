@@ -156,6 +156,47 @@ public partial class CalibrationWizardWindow : Window
         RefreshRoiList();
     }
 
+    private async void BtnReattach_Click(object sender, RoutedEventArgs e)
+    {
+        var name = string.IsNullOrWhiteSpace(TxtProfile.Text) ? "Default" : TxtProfile.Text.Trim();
+        string folder = GetCalibrationFolder();
+        var profile = await CalibrationManager.LoadAsync(folder, name);
+        if (profile == null)
+        {
+            SetStatus($"Profile '{name}' not found in {folder}");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(profile.TargetTitle) && string.IsNullOrWhiteSpace(profile.TargetClass))
+        {
+            SetStatus("Profile has no TargetTitle/Class saved.");
+            return;
+        }
+        var picker = new WindowPicker();
+        var match = picker.Enumerate().FirstOrDefault(w =>
+            (!string.IsNullOrWhiteSpace(profile.TargetTitle) && w.Title.IndexOf(profile.TargetTitle, StringComparison.OrdinalIgnoreCase) >= 0) ||
+            (!string.IsNullOrWhiteSpace(profile.TargetClass) && w.Class.IndexOf(profile.TargetClass, StringComparison.OrdinalIgnoreCase) >= 0));
+        if (match == null)
+        {
+            SetStatus("No matching window found to reattach.");
+            return;
+        }
+        EnsureOverlay();
+        _overlay?.Close();
+        _overlay = new RoiEditorOverlayWindow(match);
+        _overlay.Show();
+        int dx = 0, dy = 0;
+        if (profile.TargetLeft.HasValue && profile.TargetTop.HasValue)
+        {
+            dx = match.Left - profile.TargetLeft.Value;
+            dy = match.Top - profile.TargetTop.Value;
+        }
+        var adjusted = profile.Regions.Select(r => new Roi { Id = r.Id, X = r.X + dx, Y = r.Y + dy, Width = r.Width, Height = r.Height }).ToList();
+        _overlay.SetRois(adjusted);
+        _selected = match;
+        SetStatus($"Reattached to '{match.Title}'. Offset ({dx},{dy}).");
+        RefreshRoiList();
+    }
+
     private async void BtnCaptureProof_Click(object sender, RoutedEventArgs e)
     {
         if (_overlay == null) { SetStatus("Overlay not open."); return; }

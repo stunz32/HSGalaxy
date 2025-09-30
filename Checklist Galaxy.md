@@ -4059,3 +4059,13 @@ Remember to:
 - Validation:
   - Command: dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile wizard1
   - Output: Reattached to window '<title>' with offset (dx,dy). Composite saved to: %TEMP%\HSGalaxy\profile_wizard1_YYYYMMDD_HHMMSS.png
+### Phase 4.5 – Auto-Reattach on Capture (2025-09-29)
+- [x] Capture hotkey path now offsets ROIs using saved TargetTitle/Class and TargetLeft/Top to current window position.
+- Validation:
+  - Command: set HSGALAXY_TEST_CAPTURE_ON_START=1; set HSGALAXY_EXIT_AFTER_TEST=1; dotnet run --project src/HSGalaxy.App --no-build
+  - overlay.log shows: Calib.Attach Reattached to '<title>' offset (dx,dy) and Calib.Capture <path>
+
+### Wizard Enhancement – Manual Reattach (2025-09-29)
+- [x] Added 'Reattach' button in Calibration Wizard to re-open overlay bound to the matching window and adjust ROIs by offset.
+- Validation:
+  - Open wizard → Save profile with window identity → Move/resize window → Click Reattach → overlay updates; status shows Offset (dx,dy).
