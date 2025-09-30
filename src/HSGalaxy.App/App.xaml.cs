@@ -29,6 +29,7 @@ public partial class App : System.Windows.Application
     private AppSettings _settings = new AppSettings();
     private CalibrationWizardWindow? _wizard;
     private Forms.NotifyIcon? _tray;
+    private Forms.ToolStripMenuItem? _profilesMenu;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -310,16 +311,62 @@ public partial class App : System.Windows.Application
             _tray.Icon = System.Drawing.SystemIcons.Application;
             _tray.Text = "HSGalaxy";
             var menu = new Forms.ContextMenuStrip();
+            _profilesMenu = new Forms.ToolStripMenuItem("Profiles");
+            menu.Items.Add(_profilesMenu);
             menu.Items.Add("Open Calibration Wizard (Ctrl+Alt+C)", null, (_, __) => OpenWizard());
             menu.Items.Add("Capture Current Profile (Ctrl+Alt+P)", null, async (_, __) => await CaptureCurrentProfileAsync());
             menu.Items.Add("Hotkey Settings...", null, (_, __) => OpenHotkeySettings());
             menu.Items.Add("Exit", null, (_, __) => Shutdown());
             _tray.ContextMenuStrip = menu;
+            menu.Opening += (_, __) => RebuildProfilesMenu();
             _tray.Visible = true;
         }
         catch (System.Exception ex)
         {
             OverlayLogger.Log("TrayIcon.Error", ex.Message);
+        }
+    }
+
+    private void RebuildProfilesMenu()
+    {
+        try
+        {
+            if (_profilesMenu is null) return;
+            _profilesMenu.DropDownItems.Clear();
+            string folder = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+            var dir = new System.IO.DirectoryInfo(folder);
+            if (!dir.Exists)
+            {
+                _profilesMenu.DropDownItems.Add("(no profiles)").Enabled = false;
+                return;
+            }
+            foreach (var f in dir.GetFiles("*.json").OrderByDescending(x => x.LastWriteTimeUtc))
+            {
+                string name = System.IO.Path.GetFileNameWithoutExtension(f.Name);
+                var item = new Forms.ToolStripMenuItem(name) { Checked = string.Equals(_settings?.CurrentProfile, name, StringComparison.OrdinalIgnoreCase) };
+                item.Click += async (_, __) => await SetCurrentProfileAsync(name);
+                _profilesMenu.DropDownItems.Add(item);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            OverlayLogger.Log("Tray.Profiles.Error", ex.Message);
+        }
+    }
+
+    private async System.Threading.Tasks.Task SetCurrentProfileAsync(string name)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+            _settings.CurrentProfile = name;
+            if (_settingsStore != null) await _settingsStore.SaveAsync(_settings);
+            OverlayLogger.Log("Settings.Save", $"CurrentProfile='{name}'");
+            RebuildProfilesMenu();
+        }
+        catch (System.Exception ex)
+        {
+            OverlayLogger.Log("Settings.Save.Error", ex.Message);
         }
     }
 

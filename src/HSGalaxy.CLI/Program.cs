@@ -27,6 +27,8 @@ class Program
                 return await CalibCapture();
             if (args[0].Equals("calib:capture-profile", StringComparison.OrdinalIgnoreCase))
                 return await CalibCaptureProfile(args);
+            if (args[0].Equals("calib:list", StringComparison.OrdinalIgnoreCase))
+                return await CalibList(args);
             if (args[0].Equals("strip:render", StringComparison.OrdinalIgnoreCase))
                 return await StripRender(args);
             if (args[0].Equals("wgc:fps", StringComparison.OrdinalIgnoreCase))
@@ -174,6 +176,24 @@ class Program
             Console.WriteLine($"Loaded TargetTitle='{loaded.TargetTitle}' TargetClass='{loaded.TargetClass}'");
         }
         return ok ? 0 : 1;
+    }
+
+    private static Task<int> CalibList(string[] args)
+    {
+        string folder = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+        var dir = new System.IO.DirectoryInfo(folder);
+        if (!dir.Exists)
+        {
+            Console.WriteLine($"No calibration folder: {folder}");
+            return Task.FromResult(0);
+        }
+        Console.WriteLine($"Profiles in {folder}:");
+        var files = dir.GetFiles("*.json").OrderByDescending(f => f.LastWriteTimeUtc).ToList();
+        foreach (var f in files)
+        {
+            Console.WriteLine($"- {System.IO.Path.GetFileNameWithoutExtension(f.Name)}  (updated {f.LastWriteTime:yyyy-MM-dd HH:mm})");
+        }
+        return Task.FromResult(0);
     }
 
     private static async Task<int> CalibCapture()

@@ -4069,3 +4069,9 @@ Remember to:
 - [x] Added 'Reattach' button in Calibration Wizard to re-open overlay bound to the matching window and adjust ROIs by offset.
 - Validation:
   - Open wizard → Save profile with window identity → Move/resize window → Click Reattach → overlay updates; status shows Offset (dx,dy).
+### Phase 4.6 – Profile Tray Menu + CLI List (2025-09-29)
+- [x] Tray menu gains a dynamic 'Profiles' submenu listing saved profiles; selecting sets CurrentProfile immediately (persisted to appsettings.json).
+- [x] CLI command 'calib:list' prints available profiles and last-updated times.
+- Validation:
+  - Tray: Right-click icon → Profiles → pick a profile; overlay.log shows Settings.Save CurrentProfile='<name>'.
+  - CLI: dotnet run --project src/HSGalaxy.CLI -- calib:list (prints list).
