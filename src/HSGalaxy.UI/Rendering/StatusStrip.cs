@@ -19,6 +19,7 @@ namespace HSGalaxy.UI.Rendering
         public string P50 { get; set; } = "";
         public string P95 { get; set; } = "";
         public string Mode { get; set; } = "";
+        public string Profile { get; set; } = "";
     }
 
     /// <summary>

@@ -6,6 +6,7 @@ using HSGalaxy.Core.Net;
 using HSGalaxy.Core.Calibration;
 using HSGalaxy.Core.OCR;
 using HSGalaxy.UI.Capture;
+using HSGalaxy.Core.Config;
 
 class Program
 {
@@ -250,7 +251,8 @@ class Program
         string endpoint = Environment.GetEnvironmentVariable("HSGALAXY_AZURE_VISION_ENDPOINT") ?? string.Empty;
         string az = string.IsNullOrEmpty(endpoint) ? "Azure:Off" : "Azure:On";
         string region = DeriveRegion(endpoint);
-        string line = $"Connected  |  {az}  |  Region:{(string.IsNullOrEmpty(region) ? "Auto" : region)}  |  Latency:--  |  P50:--  |  P95:--  |  Mode:{theme}  |  Presents:0  |  dt(ms):0.0  |  DPI:{dpi}";
+        string profile = GetCurrentProfile();
+        string line = $"Connected  |  Profile:{(string.IsNullOrWhiteSpace(profile)?"--":profile)}  |  {az}  |  Region:{(string.IsNullOrEmpty(region) ? "Auto" : region)}  |  Latency:--  |  P50:--  |  P95:--  |  Mode:{theme}  |  Presents:0  |  dt(ms):0.0  |  DPI:{dpi}";
 
         using var bmp = new System.Drawing.Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
         using (var g = System.Drawing.Graphics.FromImage(bmp))
@@ -291,6 +293,19 @@ class Program
         }
         catch { }
         return string.Empty;
+    }
+
+    private static string GetCurrentProfile()
+    {
+        try
+        {
+            var cfgFolder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "config");
+            var cfgPath = System.IO.Path.Combine(cfgFolder, "appsettings.json");
+            var store = new JsonConfigStore<AppSettings>(cfgPath);
+            var settings = store.LoadAsync().GetAwaiter().GetResult();
+            return settings?.CurrentProfile ?? string.Empty;
+        }
+        catch { return string.Empty; }
     }
 
     private static async Task<int> WgcFps()

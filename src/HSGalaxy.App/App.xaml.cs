@@ -405,7 +405,8 @@ public partial class App : System.Windows.Application
             Latency = latency,
             P50 = p50,
             P95 = p95,
-            Mode = ThemeManager.Current.ToString()
+            Mode = ThemeManager.Current.ToString(),
+            Profile = string.IsNullOrWhiteSpace(_settings?.CurrentProfile) ? "--" : _settings!.CurrentProfile
         };
         _renderer.DrawStatusStrip(strip);
         _renderer.PresentIfDirty();

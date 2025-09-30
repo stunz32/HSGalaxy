@@ -260,12 +260,13 @@ namespace HSGalaxy.UI.Rendering
                 ? (Environment.GetEnvironmentVariable("HSGALAXY_AZURE_VISION_ENDPOINT") is string ep && ep.Length > 0 ? "Azure:On" : "Azure:Off")
                 : strip.Endpoint;
             string status = string.IsNullOrEmpty(strip.Status) ? "Connected" : strip.Status;
+            string profile = string.IsNullOrEmpty(strip.Profile) ? "Profile:--" : $"Profile:{strip.Profile}";
             string p50 = string.IsNullOrEmpty(strip.P50) ? "P50:N/A" : $"P50:{strip.P50}";
             string p95 = string.IsNullOrEmpty(strip.P95) ? "P95:N/A" : $"P95:{strip.P95}";
             string lat = string.IsNullOrEmpty(strip.Latency) ? "Latency:N/A" : $"Latency:{strip.Latency}";
             string region = string.IsNullOrEmpty(strip.Region) ? "Region:Auto" : $"Region:{strip.Region}";
             string mode = string.IsNullOrEmpty(strip.Mode) ? "Mode:--" : $"Mode:{strip.Mode}";
-            string line = $"{status}  |  {az}  |  {region}  |  {lat}  |  {p50}  |  {p95}  |  {mode}  |  Presents:{_presentCount}  |  dt(ms):{_presentSw.Elapsed.TotalMilliseconds:F1}  |  DPI:{dpi}";
+            string line = $"{status}  |  {profile}  |  {az}  |  {region}  |  {lat}  |  {p50}  |  {p95}  |  {mode}  |  Presents:{_presentCount}  |  dt(ms):{_presentSw.Elapsed.TotalMilliseconds:F1}  |  DPI:{dpi}";
             DrawTextOverlayEx(backBuffer, line, w, heightPx, destX: 0, destY: h - heightPx, scale, ToGdiColor(strip.Foreground));
             _isDirty = true;
         }

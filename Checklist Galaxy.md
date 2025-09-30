@@ -4075,3 +4075,8 @@ Remember to:
 - Validation:
   - Tray: Right-click icon → Profiles → pick a profile; overlay.log shows Settings.Save CurrentProfile='<name>'.
   - CLI: dotnet run --project src/HSGalaxy.CLI -- calib:list (prints list).
+### Phase 2.x – Status Strip: Current Profile (2025-09-29)
+- [x] Status strip now shows Profile:<name> alongside Azure/Region/Latency/P50/P95/Mode.
+- Validation:
+  - CLI: dotnet run --project src/HSGalaxy.CLI -- strip:render 120 dark → image includes Profile:<name>.
+  - App: overlay strip updates live; profile change via tray menu reflects on next render tick.
