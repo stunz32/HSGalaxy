@@ -26,6 +26,8 @@ public partial class RoiEditorOverlayWindow : Window
     private ResizeEdges _resizeMode = ResizeEdges.None;
     private const double Grip = 6.0; // DIP tolerance for edge hit tests
     private readonly List<(System.Windows.Shapes.Rectangle Handle, ResizeEdges Edges)> _handles = new();
+    private readonly Dictionary<System.Windows.Shapes.Rectangle, System.Windows.Controls.TextBlock> _labels = new();
+    private const double GridSizeDip = 8.0; // grid and snap size
 
     public event EventHandler? RoisChanged;
 
@@ -52,11 +54,12 @@ public partial class RoiEditorOverlayWindow : Window
         CanvasRoot.Width = Width;
         CanvasRoot.Height = Height;
         CanvasRoot.Focus();
+        ApplyGridBackground();
     }
 
     public void ClearRois()
     {
-        var keep = CanvasRoot.Children.OfType<UIElement>().Where(c => c is not System.Windows.Shapes.Rectangle || _handles.Any(h => h.Handle == c)).ToList();
+        var keep = CanvasRoot.Children.OfType<UIElement>().Where(c => (c is not System.Windows.Shapes.Rectangle) || _handles.Any(h => h.Handle == c)).ToList();
         CanvasRoot.Children.Clear();
         foreach (var k in keep) CanvasRoot.Children.Add(k);
         _selectedRect = null;
@@ -103,6 +106,8 @@ public partial class RoiEditorOverlayWindow : Window
             Canvas.SetLeft(rect, Math.Max(0, rx / sx));
             Canvas.SetTop(rect, Math.Max(0, ry / sy));
             CanvasRoot.Children.Add(rect);
+            EnsureLabel(rect);
+            UpdateLabel(rect);
         }
         RoisChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -159,9 +164,10 @@ public partial class RoiEditorOverlayWindow : Window
         _currentRect = CreateRect();
         _currentRect.Width = 1;
         _currentRect.Height = 1;
-        Canvas.SetLeft(_currentRect, _start.X);
-        Canvas.SetTop(_currentRect, _start.Y);
+        Canvas.SetLeft(_currentRect, Snap(_start.X));
+        Canvas.SetTop(_currentRect, Snap(_start.Y));
         CanvasRoot.Children.Add(_currentRect);
+        EnsureLabel(_currentRect);
         CanvasRoot.CaptureMouse();
         e.Handled = true;
     }
@@ -175,10 +181,11 @@ public partial class RoiEditorOverlayWindow : Window
             double y = Math.Min(p.Y, _start.Y);
             double w = Math.Abs(p.X - _start.X);
             double h = Math.Abs(p.Y - _start.Y);
-            Canvas.SetLeft(_currentRect, x);
-            Canvas.SetTop(_currentRect, y);
-            _currentRect.Width = Math.Max(1, w);
-            _currentRect.Height = Math.Max(1, h);
+            Canvas.SetLeft(_currentRect, Snap(x));
+            Canvas.SetTop(_currentRect, Snap(y));
+            _currentRect.Width = Math.Max(1, Snap(w));
+            _currentRect.Height = Math.Max(1, Snap(h));
+            UpdateLabel(_currentRect);
         }
         else if (_draggingMove && _hitRect != null)
         {
@@ -187,12 +194,14 @@ public partial class RoiEditorOverlayWindow : Window
             MoveRect(_hitRect, dx, dy);
             _start = p;
             UpdateHandles();
+            UpdateLabel(_hitRect);
         }
         else if (_draggingResize && _hitRect != null)
         {
             ResizeRect(_hitRect, p);
             _start = p;
             UpdateHandles();
+            UpdateLabel(_hitRect);
         }
     }
 
@@ -221,13 +230,14 @@ public partial class RoiEditorOverlayWindow : Window
         if (e.Key == Key.Delete)
         {
             // Remove last rectangle
-            var last = _selectedRect ?? CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>().LastOrDefault();
+            var last = _selectedRect ?? CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>().LastOrDefault(r => !_handles.Any(h => h.Handle == r));
             if (last != null)
             {
                 CanvasRoot.Children.Remove(last);
                 if (_selectedRect == last) _selectedRect = null;
                 UpdateHandles();
                 RoisChanged?.Invoke(this, EventArgs.Empty);
+                if (_labels.TryGetValue(last, out var lbl)) { CanvasRoot.Children.Remove(lbl); _labels.Remove(last); }
             }
             return;
         }
@@ -248,7 +258,7 @@ public partial class RoiEditorOverlayWindow : Window
                 else if (e.Key == Key.Up) { _selectedRect.Height = Math.Max(1, _selectedRect.Height - step); e.Handled = true; }
                 else if (e.Key == Key.Down) { _selectedRect.Height = Math.Max(1, _selectedRect.Height + step); e.Handled = true; }
             }
-            if (e.Handled) { UpdateHandles(); RoisChanged?.Invoke(this, EventArgs.Empty); }
+            if (e.Handled) { UpdateHandles(); UpdateLabel(_selectedRect); RoisChanged?.Invoke(this, EventArgs.Empty); }
         }
     }
 
@@ -283,8 +293,8 @@ public partial class RoiEditorOverlayWindow : Window
         double ny = Math.Max(0, Canvas.GetTop(rect) + dy);
         nx = Math.Min(nx, Math.Max(0, CanvasRoot.Width - rect.Width));
         ny = Math.Min(ny, Math.Max(0, CanvasRoot.Height - rect.Height));
-        Canvas.SetLeft(rect, nx);
-        Canvas.SetTop(rect, ny);
+        Canvas.SetLeft(rect, Snap(nx));
+        Canvas.SetTop(rect, Snap(ny));
     }
 
     private void ResizeRect(System.Windows.Shapes.Rectangle rect, System.Windows.Point cursor)
@@ -320,10 +330,10 @@ public partial class RoiEditorOverlayWindow : Window
         nw = Math.Min(nw, CanvasRoot.Width - nx);
         nh = Math.Min(nh, CanvasRoot.Height - ny);
 
-        Canvas.SetLeft(rect, nx);
-        Canvas.SetTop(rect, ny);
-        rect.Width = Math.Max(1, nw);
-        rect.Height = Math.Max(1, nh);
+        Canvas.SetLeft(rect, Snap(nx));
+        Canvas.SetTop(rect, Snap(ny));
+        rect.Width = Math.Max(1, Snap(nw));
+        rect.Height = Math.Max(1, Snap(nh));
     }
 
     private ResizeEdges HitHandle(System.Windows.Point p)
@@ -424,6 +434,7 @@ public partial class RoiEditorOverlayWindow : Window
             if (_selectedRect == rect) _selectedRect = null;
             UpdateHandles();
             RoisChanged?.Invoke(this, EventArgs.Empty);
+            if (_labels.TryGetValue(rect, out var lbl)) { CanvasRoot.Children.Remove(lbl); _labels.Remove(rect); }
         }
     }
 
@@ -432,5 +443,66 @@ public partial class RoiEditorOverlayWindow : Window
         _selectedRect = CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>()
             .FirstOrDefault(r => !_handles.Any(h => h.Handle == r) && (r.Tag as string) == id);
         UpdateHandles();
+    }
+
+    public bool ContainsId(string id)
+        => CanvasRoot.Children.OfType<System.Windows.Shapes.Rectangle>().Any(r => !_handles.Any(h => h.Handle == r) && (r.Tag as string) == id);
+
+    private void ApplyGridBackground()
+    {
+        try
+        {
+            double g = GridSizeDip;
+            var dg = new System.Windows.Media.DrawingGroup();
+            var pen = new System.Windows.Media.Pen(new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 255, 255, 255)), 1);
+            // vertical line
+            dg.Children.Add(new System.Windows.Media.GeometryDrawing(null, pen, new System.Windows.Media.LineGeometry(new System.Windows.Point(0, 0), new System.Windows.Point(0, g))));
+            // horizontal line
+            dg.Children.Add(new System.Windows.Media.GeometryDrawing(null, pen, new System.Windows.Media.LineGeometry(new System.Windows.Point(0, 0), new System.Windows.Point(g, 0))));
+            var brush = new System.Windows.Media.DrawingBrush(dg)
+            {
+                TileMode = System.Windows.Media.TileMode.Tile,
+                Viewport = new System.Windows.Rect(0, 0, g, g),
+                ViewportUnits = System.Windows.Media.BrushMappingMode.Absolute,
+                Stretch = System.Windows.Media.Stretch.None
+            };
+            CanvasRoot.Background = brush;
+        }
+        catch { CanvasRoot.Background = System.Windows.Media.Brushes.Transparent; }
+    }
+
+    private void EnsureLabel(System.Windows.Shapes.Rectangle rect)
+    {
+        if (_labels.ContainsKey(rect)) return;
+        var tb = new System.Windows.Controls.TextBlock
+        {
+            Foreground = System.Windows.Media.Brushes.Lime,
+            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(160, 0, 0, 0)),
+            FontSize = 10,
+            Padding = new System.Windows.Thickness(2,0,2,0)
+        };
+        _labels[rect] = tb;
+        CanvasRoot.Children.Add(tb);
+    }
+
+    private void UpdateLabel(System.Windows.Shapes.Rectangle? rect)
+    {
+        if (rect == null) return;
+        if (!_labels.TryGetValue(rect, out var tb)) return;
+        double sx = _dpi.DpiScaleX;
+        double sy = _dpi.DpiScaleY;
+        int px = (int)Math.Round(rect.Width * sx);
+        int py = (int)Math.Round(rect.Height * sy);
+        tb.Text = $"{px}x{py}";
+        double x = Canvas.GetLeft(rect);
+        double y = Canvas.GetTop(rect) - tb.ActualHeight - 2;
+        if (double.IsNaN(y) || y < 0) y = Canvas.GetTop(rect) + 2;
+        Canvas.SetLeft(tb, x + 2);
+        Canvas.SetTop(tb, y);
+    }
+
+    private static double Snap(double v)
+    {
+        return Math.Round(v / GridSizeDip) * GridSizeDip;
     }
 }

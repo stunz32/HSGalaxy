@@ -4080,3 +4080,10 @@ Remember to:
 - Validation:
   - CLI: dotnet run --project src/HSGalaxy.CLI -- strip:render 120 dark → image includes Profile:<name>.
   - App: overlay strip updates live; profile change via tray menu reflects on next render tick.
+### Phase 4.7 – ROI Editor QoL: Grid, Snap, Size Labels (2025-09-29)
+- [x] Overlay now shows a light 8-DIP grid; rectangle creation/move/resize snaps to the grid.
+- [x] Per-ROI size label (WxH in device pixels) at top-left of each rectangle; updates live while dragging.
+- [x] Prevent duplicate ROI Ids on rename (wizard warns and reverts).
+- Validation:
+  - Open wizard → draw/move/resize rectangles → observe snapping and live size label updates.
+  - Try renaming a ROI to an existing Id → status shows warning and original Id remains.

@@ -323,9 +323,17 @@ public partial class CalibrationWizardWindow : Window
             }
             if (!string.IsNullOrWhiteSpace(newId) && !string.Equals(row.OriginalId, newId, StringComparison.Ordinal))
             {
-                _overlay.RenameRoi(row.OriginalId, newId);
-                row.OriginalId = newId;
-                RefreshRoiList();
+                if (_overlay.ContainsId(newId))
+                {
+                    SetStatus($"ROI Id '{newId}' already exists.");
+                    tb.Text = row.OriginalId; // revert visual
+                }
+                else
+                {
+                    _overlay.RenameRoi(row.OriginalId, newId);
+                    row.OriginalId = newId;
+                    RefreshRoiList();
+                }
             }
         }
     }
