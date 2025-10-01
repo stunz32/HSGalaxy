@@ -4182,3 +4182,23 @@ Remember to:
     2025-09-30T18:41:55.820-07:00	Settings.Load	CurrentProfile='wizard1_copy_renamed'
     2025-09-30T18:41:56.188-07:00	Tray	Initialized
     2025-09-30T18:41:58.358-07:00	Calib.Capture	C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\hotkey_wizard1_copy_renamed_20250930_184158.png
+
+## 2025-09-30 18:46 PDT – Import auto-suffix, Wizard logs, and settings watcher
+
+- CLI import auto-suffix (no overwrite unless --force)
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:import %TEMP%\HSGalaxy\exports\wizard1.json`
+  - Output: Imported profile 'wizard1_copy' from C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports\wizard1.json -> C:\Users\Marcco\AppData\Local\HSGalaxy\calibration\wizard1_copy.json
+  - Re-run import to confirm next suffix
+    - Output: Imported profile 'wizard1_copy2' from C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports\wizard1.json -> C:\Users\Marcco\AppData\Local\HSGalaxy\calibration\wizard1_copy2.json
+
+- Profiles list reflects both copies
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:list`
+  - Output shows wizard1_copy2, wizard1_copy, wizard1_copy_renamed, SelfTest, wizard1
+
+- Wizard logging added
+  - Wizard now logs OCR runs (Wizard.OCR.Run), Copy Text Only (Wizard.OCR.CopyTextOnly), and Import/Export paths (Wizard.Import/Wizard.Export) to overlay.log.
+
+- App settings watcher
+  - The app watches appsettings.json and reloads CurrentProfile when changed externally; rebuilds tray Profiles menu and refreshes status strip automatically.
+  - Safe wizard log snippet verifying current profile on startup:
+    2025-09-30T18:45:52.918-07:00	Settings.Load	CurrentProfile='wizard1_copy2'

@@ -10,6 +10,7 @@ using HSGalaxy.Core.Calibration;
 using HSGalaxy.Core.Config;
 using HSGalaxy.UI.Capture;
 using HSGalaxy.Core.OCR;
+using HSGalaxy.Diagnostics;
 
 namespace HSGalaxy.App.Calibration;
 
@@ -230,6 +231,7 @@ public partial class CalibrationWizardWindow : Window
         ApplyOcrFilters();
         TxtOcrMeta.Text = $"Source:{result.Source}  Elapsed:{result.ElapsedMs:F1}ms  Lines:{result.Lines.Count}";
         SetStatus("OCR run complete.");
+        try { OverlayLogger.Log("Wizard.OCR.Run", $"Source={result.Source}; Lines={result.Lines.Count}; ElapsedMs={result.ElapsedMs:F1}"); } catch { }
     }
 
     private void BtnCopyAll_Click(object sender, RoutedEventArgs e)
@@ -302,7 +304,7 @@ public partial class CalibrationWizardWindow : Window
                 sb.AppendLine();
             }
         }
-        try { System.Windows.Clipboard.SetText(sb.ToString()); SetStatus("OCR text copied to clipboard."); }
+        try { System.Windows.Clipboard.SetText(sb.ToString()); SetStatus("OCR text copied to clipboard."); try { OverlayLogger.Log("Wizard.OCR.CopyTextOnly", $"Items={LstOcr.Items.Count}"); } catch { } }
         catch { SetStatus("Failed to access clipboard."); }
     }
 
@@ -334,6 +336,7 @@ public partial class CalibrationWizardWindow : Window
                 var json = Newtonsoft.Json.JsonConvert.SerializeObject(profile, Newtonsoft.Json.Formatting.Indented);
                 await System.IO.File.WriteAllTextAsync(dlg.FileName, json, System.Text.Encoding.UTF8);
                 SetStatus($"Exported '{name}' to: {dlg.FileName}");
+                try { OverlayLogger.Log("Wizard.Export", dlg.FileName); } catch { }
             }
         }
         catch (Exception ex) { SetStatus($"Export failed: {ex.Message}"); }
@@ -353,12 +356,28 @@ public partial class CalibrationWizardWindow : Window
             var prof = Newtonsoft.Json.JsonConvert.DeserializeObject<CalibrationProfile>(json) ?? new CalibrationProfile();
             var desired = TxtProfile?.Text?.Trim();
             string name = !string.IsNullOrWhiteSpace(desired) ? desired! : (!string.IsNullOrWhiteSpace(prof.Name) ? prof.Name : System.IO.Path.GetFileNameWithoutExtension(dlg.FileName));
-            prof.Name = name;
             string folder = GetCalibrationFolder();
+            // If name exists and user didn't explicitly type a different name, auto-suffix
+            string outPath = System.IO.Path.Combine(folder, name + ".json");
+            if (System.IO.File.Exists(outPath) && (string.IsNullOrWhiteSpace(desired) || string.Equals(desired, prof.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                string baseName = name;
+                string candidate = baseName + "_copy";
+                int n = 2;
+                while (System.IO.File.Exists(System.IO.Path.Combine(folder, candidate + ".json")))
+                {
+                    candidate = baseName + "_copy" + n.ToString();
+                    n++;
+                }
+                name = candidate;
+                SetStatus($"Name exists. Imported as '{name}'.");
+            }
+            prof.Name = name;
             await CalibrationManager.SaveAsync(prof, folder);
             await SaveCurrentProfileNameAsync(name);
             TxtProfile.Text = name;
             SetStatus($"Imported profile '{name}' from {dlg.FileName}");
+            try { OverlayLogger.Log("Wizard.Import", $"{dlg.FileName} -> {System.IO.Path.Combine(folder, name + ".json")}"); } catch { }
             if (_overlay != null)
             {
                 _overlay.SetRois(prof.Regions);

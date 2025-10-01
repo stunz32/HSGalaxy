@@ -27,6 +27,7 @@ public partial class App : System.Windows.Application
     private readonly System.Collections.Generic.List<double> _presentDurations = new();
     private JsonConfigStore<AppSettings>? _settingsStore;
     private AppSettings _settings = new AppSettings();
+    private System.IO.FileSystemWatcher? _settingsWatcher;
     private CalibrationWizardWindow? _wizard;
     private Forms.NotifyIcon? _tray;
     private Forms.ToolStripMenuItem? _profilesMenu;
@@ -43,6 +44,7 @@ public partial class App : System.Windows.Application
         {
             OverlayLogger.Log("Startup", "SafeWizardMode: DISABLE_OVERLAY=1");
             TryInitSettings();
+            StartSettingsWatcher();
             OpenWizard();
             TryScheduleWizardSelfTest();
             // In this mode, keep the app alive by binding shutdown to wizard window
@@ -60,6 +62,7 @@ public partial class App : System.Windows.Application
         OverlayLogger.Log("Overlay.WindowCreated", $"Affinity={_overlay.QueryDisplayAffinity()}");
         // Load settings before registering hotkeys
         TryInitSettings();
+        StartSettingsWatcher();
         _overlay.ThemeHotkeyPressed += (_, __) => ThemeManager.Cycle();
         _overlay.CaptureHotkeyPressed += (_, __) => { OverlayLogger.Log("Hotkey", "Capture pressed"); Dispatcher.InvokeAsync(async () => await CaptureCurrentProfileAsync()); };
         _overlay.WizardHotkeyPressed += (_, __) => { OverlayLogger.Log("Hotkey", "Wizard pressed"); Dispatcher.InvokeAsync(() => OpenWizard()); };
@@ -239,6 +242,46 @@ public partial class App : System.Windows.Application
                 Shutdown();
             };
             exitTimer.Start();
+        }
+    }
+
+    private void StartSettingsWatcher()
+    {
+        try
+        {
+            var cfgFolder = GetConfigFolder();
+            _settingsWatcher = new System.IO.FileSystemWatcher(cfgFolder, "appsettings.json")
+            {
+                NotifyFilter = System.IO.NotifyFilters.LastWrite | System.IO.NotifyFilters.Size
+            };
+            _settingsWatcher.Changed += async (_, __) =>
+            {
+                try
+                {
+                    if (_settingsStore == null) return;
+                    var s = await _settingsStore.LoadAsync();
+                    // Only act if CurrentProfile changed
+                    if (!string.Equals(_settings.CurrentProfile, s.CurrentProfile, StringComparison.Ordinal))
+                    {
+                        _settings = s;
+                        OverlayLogger.Log("Settings.Watch", $"CurrentProfile='{_settings.CurrentProfile}'");
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            RebuildProfilesMenu();
+                            TryRenderStatusStrip();
+                        });
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    try { OverlayLogger.Log("Settings.Watch.Error", ex.Message); } catch { }
+                }
+            };
+            _settingsWatcher.EnableRaisingEvents = true;
+        }
+        catch (System.Exception ex)
+        {
+            try { OverlayLogger.Log("Settings.Watch.InitError", ex.Message); } catch { }
         }
     }
 

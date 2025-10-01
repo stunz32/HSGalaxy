@@ -517,12 +517,17 @@ class Program
         }
         string path = args[1];
         string? newName = null;
-        for (int i = 2; i < args.Length - 1; i++)
+        bool force = false;
+        for (int i = 2; i < args.Length; i++)
         {
-            if (args[i].Equals("--name", StringComparison.OrdinalIgnoreCase))
+            if (args[i].Equals("--name", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 newName = args[i + 1];
-                break;
+                i++;
+            }
+            else if (args[i].Equals("--force", StringComparison.OrdinalIgnoreCase))
+            {
+                force = true;
             }
         }
         try
@@ -532,6 +537,21 @@ class Program
             string targetName = !string.IsNullOrWhiteSpace(newName) ? newName! : (!string.IsNullOrWhiteSpace(prof.Name) ? prof.Name : System.IO.Path.GetFileNameWithoutExtension(path));
             prof.Name = targetName;
             string folder = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+            // If target exists and not forcing, pick a unique suffix: _copy, _copy2, ...
+            string outPath = System.IO.Path.Combine(folder, targetName + ".json");
+            if (!force && System.IO.File.Exists(outPath))
+            {
+                string baseName = targetName;
+                string candidate = baseName + "_copy";
+                int n = 2;
+                while (System.IO.File.Exists(System.IO.Path.Combine(folder, candidate + ".json")))
+                {
+                    candidate = baseName + "_copy" + n.ToString();
+                    n++;
+                }
+                targetName = candidate;
+                prof.Name = targetName;
+            }
             await CalibrationManager.SaveAsync(prof, folder);
             // Set CurrentProfile
             string cfgFolder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "config");
