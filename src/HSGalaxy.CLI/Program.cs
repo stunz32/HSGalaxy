@@ -537,7 +537,7 @@ class Program
             var settings = await store.LoadAsync();
             settings.CurrentProfile = targetName;
             await store.SaveAsync(settings);
-            var savedPath = System.IO.Path.Combine(folder, Sanitize(targetName) + ".json");
+            var savedPath = System.IO.Path.Combine(folder, targetName + ".json");
             Console.WriteLine($"Imported profile '{targetName}' from {System.IO.Path.GetFullPath(path)} -> {savedPath}");
             return 0;
         }
