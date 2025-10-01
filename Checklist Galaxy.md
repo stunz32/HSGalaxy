@@ -4139,3 +4139,9 @@ Remember to:
 - Wizard UI updates
   - Added buttons: "Export Profile…", "Import Profile…". Export default filename <name>.json; Import uses `TxtProfile` value if set, else JSON Name/filename. Import persists and sets CurrentProfile, and updates overlay ROI list if the overlay is open.
   - OCR panel: added Filter ROI textbox and Min Conf textbox; results list updates live; counters show WithText/Empty; new "Copy Text Only" copies `[ROI]` headers with text per ROI.
+
+## 2025-09-30 18:34 PDT – Tray/strip auto-refresh on profile change
+
+- Implementation note: Wizard now notifies the running app to apply the new CurrentProfile immediately after import/save.
+  - Relevant: `App.NotifyCurrentProfileChanged(name)` updates in-memory settings, rebuilds Profiles submenu, and triggers status strip re-render instantly.
+  - This ensures tray Profiles menu checks the new profile without reopening the app; status strip shows the new Profile within 0–500 ms (timer) or instantly on change.
