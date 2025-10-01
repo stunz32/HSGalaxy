@@ -387,6 +387,33 @@ public partial class CalibrationWizardWindow : Window
         catch (Exception ex) { SetStatus($"Import failed: {ex.Message}"); }
     }
 
+    private async void BtnExportAll_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dlg = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Choose a folder to export all profiles"
+            };
+            var result = dlg.ShowDialog();
+            if (result != System.Windows.Forms.DialogResult.OK || string.IsNullOrWhiteSpace(dlg.SelectedPath)) return;
+            string folder = GetCalibrationFolder();
+            int count = 0;
+            foreach (var f in new DirectoryInfo(folder).GetFiles("*.json"))
+            {
+                var dest = Path.Combine(dlg.SelectedPath, f.Name);
+                File.Copy(f.FullName, dest, overwrite: true);
+                count++;
+            }
+            SetStatus($"Exported {count} profiles to: {dlg.SelectedPath}");
+            try { OverlayLogger.Log("Wizard.ExportAll", $"{count} -> {dlg.SelectedPath}"); } catch { }
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Export all failed: {ex.Message}");
+        }
+    }
+
     private async void BtnCaptureProof_Click(object sender, RoutedEventArgs e)
     {
         if (_overlay == null) { SetStatus("Overlay not open."); return; }

@@ -47,6 +47,7 @@
                         <Button Content="Save" Margin="6,0,0,0" Click="BtnSave_Click"/>
                         <Button Content="Export Profile…" Margin="6,0,0,0" Click="BtnExport_Click"/>
                         <Button Content="Import Profile…" Margin="6,0,0,0" Click="BtnImport_Click"/>
+                        <Button Content="Export All…" Margin="6,0,0,0" Click="BtnExportAll_Click"/>
                         <Button Content="Clear ROIs" Margin="6,0,0,0" Click="BtnClear_Click"/>
                     </StackPanel>
                     <TextBlock TextWrapping="Wrap" Opacity="0.75" Margin="0,0,0,6">

@@ -38,6 +38,8 @@ class Program
                 return await CalibExportAll(args);
             if (args[0].Equals("calib:rename", StringComparison.OrdinalIgnoreCase))
                 return await CalibRename(args);
+            if (args[0].Equals("calib:delete", StringComparison.OrdinalIgnoreCase))
+                return await CalibDelete(args);
             if (args[0].Equals("strip:render", StringComparison.OrdinalIgnoreCase))
                 return await StripRender(args);
             if (args[0].Equals("wgc:fps", StringComparison.OrdinalIgnoreCase))
@@ -48,7 +50,7 @@ class Program
                 return await WgcValidate(args);
         }
 
-        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
+        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
         return 0;
     }
 
@@ -641,6 +643,45 @@ class Program
         }
         Console.WriteLine($"Renamed '{oldName}' -> '{newName}'. New path: {newPath}");
         return 0;
+    }
+
+    private static async Task<int> CalibDelete(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("Usage: calib:delete <name>");
+            return 1;
+        }
+        string name = args[1];
+        string folder = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+        string path = System.IO.Path.Combine(folder, name + ".json");
+        if (!System.IO.File.Exists(path))
+        {
+            Console.WriteLine($"Profile '{name}' not found in {folder}");
+            return 1;
+        }
+        try
+        {
+            System.IO.File.Delete(path);
+            Console.WriteLine($"Deleted profile: {path}");
+            // If was current, clear it
+            string cfgFolder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "config");
+            string cfgPath = System.IO.Path.Combine(cfgFolder, "appsettings.json");
+            var store = new JsonConfigStore<AppSettings>(cfgPath);
+            var settings = await store.LoadAsync();
+            if (string.Equals(settings.CurrentProfile, name, StringComparison.OrdinalIgnoreCase))
+            {
+                settings.CurrentProfile = string.Empty;
+                await store.SaveAsync(settings);
+                Console.WriteLine("CurrentProfile cleared.");
+            }
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Delete failed: {ex.Message}");
+            return 1;
+        }
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);

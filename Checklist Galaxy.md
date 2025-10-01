@@ -4202,3 +4202,33 @@ Remember to:
   - The app watches appsettings.json and reloads CurrentProfile when changed externally; rebuilds tray Profiles menu and refreshes status strip automatically.
   - Safe wizard log snippet verifying current profile on startup:
     2025-09-30T18:45:52.918-07:00	Settings.Load	CurrentProfile='wizard1_copy2'
+
+## 2025-09-30 18:51 PDT – Export All in Wizard; CLI delete; validations
+
+- Wizard: Export All Profiles UI
+  - Action: Click "Export All…" in Calibration Wizard; choose folder.
+  - Result: Copies all *.json from %LOCALAPPDATA%\HSGalaxy\calibration; status shows count; overlay.log tags Wizard.ExportAll.
+
+- CLI export-all to new folder
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:export-all %TEMP%\HSGalaxy\exports_all2`
+  - Output (examples):
+    Exported 'SelfTest' -> C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports_all2\SelfTest.json
+    Exported 'watchtest1' -> C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports_all2\watchtest1.json
+    Exported 'wizard1' -> C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports_all2\wizard1.json
+    Exported 'wizard1_copy2' -> C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports_all2\wizard1_copy2.json
+    Exported 'wizard1_copy_renamed' -> C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports_all2\wizard1_copy_renamed.json
+    Total exported: 6
+
+- CLI delete profile
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:delete wizard1_copy`
+  - Output: Deleted profile: C:\Users\Marcco\AppData\Local\HSGalaxy\calibration\wizard1_copy.json
+
+- Verify list after delete
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:list`
+  - Output:
+    Profiles in C:\Users\Marcco\AppData\Local\HSGalaxy\calibration:
+    - watchtest1  (updated 2025-09-30 18:47)
+    - wizard1_copy2  (updated 2025-09-30 18:45)
+    - wizard1_copy_renamed  (updated 2025-09-30 18:41)
+    - SelfTest  (updated 2025-09-29 20:34)
+    - wizard1  (updated 2025-09-29 20:06)
