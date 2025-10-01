@@ -41,6 +41,8 @@ class Program
                 return await CalibRename(args);
             if (args[0].Equals("calib:delete", StringComparison.OrdinalIgnoreCase))
                 return await CalibDelete(args);
+            if (args[0].Equals("calib:mkprofile-window", StringComparison.OrdinalIgnoreCase))
+                return await CalibMakeProfileWindow(args);
             if (args[0].Equals("storage:validate", StringComparison.OrdinalIgnoreCase))
                 return await StorageValidate();
             if (args[0].Equals("storage:primary-probe", StringComparison.OrdinalIgnoreCase))
@@ -55,7 +57,7 @@ class Program
                 return await WgcValidate(args);
         }
 
-        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
+        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
         return 0;
     }
 
@@ -685,6 +687,57 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"Delete failed: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static async Task<int> CalibMakeProfileWindow(string[] args)
+    {
+        if (args.Length < 3)
+        {
+            Console.WriteLine("Usage: calib:mkprofile-window <query> <name>");
+            return 1;
+        }
+        string query = args[1];
+        string name = args[2];
+        try
+        {
+            var picker = new HSGalaxy.UI.Capture.WindowPicker();
+            var match = picker.Enumerate().FirstOrDefault(w =>
+                (w.Title?.IndexOf(query, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0 ||
+                (w.Class?.IndexOf(query, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0);
+            if (match == null)
+            {
+                Console.WriteLine($"No window matching '{query}'");
+                return 1;
+            }
+            int left = match.Left + 40;
+            int top = match.Top + 60;
+            int width = Math.Max(200, (match.Right - match.Left) / 3);
+            int height = 40;
+            var profile = new CalibrationProfile
+            {
+                Name = name,
+                TargetTitle = match.Title,
+                TargetClass = match.Class,
+                TargetLeft = match.Left,
+                TargetTop = match.Top,
+                Regions = new System.Collections.Generic.List<Roi>
+                {
+                    new Roi{ Id = "r1", X = left, Y = top, Width = width, Height = height },
+                    new Roi{ Id = "r2", X = left, Y = top + height + 10, Width = width, Height = height },
+                    new Roi{ Id = "r3", X = left, Y = top + (height + 10)*2, Width = width, Height = height },
+                }
+            };
+            string folder = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+            await CalibrationManager.SaveAsync(profile, folder);
+            var outPath = System.IO.Path.Combine(folder, name + ".json");
+            Console.WriteLine($"Profile '{name}' saved: {outPath}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"mkprofile failed: {ex.Message}");
             return 1;
         }
     }

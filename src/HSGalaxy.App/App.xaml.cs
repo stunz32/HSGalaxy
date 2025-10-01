@@ -11,6 +11,7 @@ using HSGalaxy.Core.Config;
 using HSGalaxy.Core.Calibration;
 using HSGalaxy.App.Calibration;
 using Forms = System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace HSGalaxy.App;
 
@@ -63,6 +64,7 @@ public partial class App : System.Windows.Application
         // Load settings before registering hotkeys
         TryInitSettings();
         StartSettingsWatcher();
+        StartSettingsWatcher();
         _overlay.ThemeHotkeyPressed += (_, __) => ThemeManager.Cycle();
         _overlay.CaptureHotkeyPressed += (_, __) => { OverlayLogger.Log("Hotkey", "Capture pressed"); Dispatcher.InvokeAsync(async () => await CaptureCurrentProfileAsync()); };
         _overlay.WizardHotkeyPressed += (_, __) => { OverlayLogger.Log("Hotkey", "Wizard pressed"); Dispatcher.InvokeAsync(() => OpenWizard()); };
@@ -103,6 +105,8 @@ public partial class App : System.Windows.Application
         TryAutoOpenWizard();
         TryScheduleWizardSelfTest();
         TryScheduleAutoCaptureForTest();
+        TryLogDpiAwareness();
+        TryLongPathSelfTest();
 
         // Optional: stress test via env var (HSGALAXY_STRESS_PRESENTS=1)
         var stress = Environment.GetEnvironmentVariable("HSGALAXY_STRESS_PRESENTS");
@@ -699,6 +703,79 @@ public partial class App : System.Windows.Application
         System.IO.Directory.CreateDirectory(folder);
         return folder;
     }
+
+    private void TryLogDpiAwareness()
+    {
+        try
+        {
+            // Prefer checking the overlay window's DPI awareness context when available
+            string info = string.Empty;
+            if (_overlay != null)
+            {
+                var ctx = GetWindowDpiAwarenessContext(_overlay.Handle);
+                var aw = GetAwarenessFromDpiAwarenessContext(ctx);
+                info = aw switch
+                {
+                    DPI_AWARENESS.DPI_AWARENESS_UNAWARE => "Unaware",
+                    DPI_AWARENESS.DPI_AWARENESS_SYSTEM_AWARE => "SystemAware",
+                    DPI_AWARENESS.DPI_AWARENESS_PER_MONITOR_AWARE => "PerMonitor",
+                    (DPI_AWARENESS)4 => "PerMonitorV2",
+                    _ => aw.ToString()
+                };
+            }
+            else
+            {
+                // Fallback: Shcore GetProcessDpiAwareness
+                var h = System.Diagnostics.Process.GetCurrentProcess().Handle;
+                GetProcessDpiAwareness(h, out PROCESS_DPI_AWARENESS pa);
+                info = pa switch
+                {
+                    PROCESS_DPI_AWARENESS.PROCESS_DPI_UNAWARE => "Unaware",
+                    PROCESS_DPI_AWARENESS.PROCESS_SYSTEM_DPI_AWARE => "SystemAware",
+                    PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE => "PerMonitor",
+                    _ => pa.ToString()
+                };
+            }
+            OverlayLogger.Log("DPI.Awareness", info);
+        }
+        catch (System.Exception ex)
+        {
+            try { OverlayLogger.Log("DPI.Awareness.Error", ex.Message); } catch { }
+        }
+    }
+
+    private void TryLongPathSelfTest()
+    {
+        try
+        {
+            var flag = Environment.GetEnvironmentVariable("HSGALAXY_LONGPATH_TEST");
+            if (!string.Equals(flag, "1", StringComparison.OrdinalIgnoreCase)) return;
+            var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HSGalaxy", "longpath");
+            var seg = new string('a', 40);
+            string path = root;
+            for (int i = 0; i < 8; i++) path = System.IO.Path.Combine(path, seg + i.ToString());
+            System.IO.Directory.CreateDirectory(path);
+            var file = System.IO.Path.Combine(path, "test.txt");
+            var content = $"LongPath OK @ {DateTime.Now:O}";
+            System.IO.File.WriteAllText(file, content);
+            int len = file.Length;
+            OverlayLogger.Log("LongPath.Test", $"Wrote {len} chars path: {file}");
+        }
+        catch (System.Exception ex)
+        {
+            try { OverlayLogger.Log("LongPath.Test.Error", ex.Message); } catch { }
+        }
+    }
+
+    // DPI interop
+    private enum PROCESS_DPI_AWARENESS { PROCESS_DPI_UNAWARE = 0, PROCESS_SYSTEM_DPI_AWARE = 1, PROCESS_PER_MONITOR_DPI_AWARE = 2 }
+    private enum DPI_AWARENESS { DPI_AWARENESS_INVALID = -1, DPI_AWARENESS_UNAWARE = 0, DPI_AWARENESS_SYSTEM_AWARE = 1, DPI_AWARENESS_PER_MONITOR_AWARE = 2 }
+    [DllImport("Shcore.dll")]
+    private static extern int GetProcessDpiAwareness(IntPtr hprocess, out PROCESS_DPI_AWARENESS value);
+    [DllImport("User32.dll")]
+    private static extern IntPtr GetWindowDpiAwarenessContext(IntPtr hWnd);
+    [DllImport("User32.dll")]
+    private static extern DPI_AWARENESS GetAwarenessFromDpiAwarenessContext(IntPtr value);
 
     private static string Sanitize(string s)
     {

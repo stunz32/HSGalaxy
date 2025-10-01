@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="ff346d3f-c5d9-4d98-a4d3-06a887c1c34e" name="Marcco@MARCCOPC 2025-09-30 18:57:04" runUser="MARCCOPC\Marcco" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2025-09-30T18:57:04.4407363-07:00" queuing="2025-09-30T18:57:04.4407368-07:00" start="2025-09-30T18:57:02.4986855-07:00" finish="2025-09-30T18:57:04.4496490-07:00" />
+  <TestSettings name="default" id="ff89b6b3-d082-4431-90c7-d4da9c3c65b7">
+    <Deployment runDeploymentRoot="Marcco_MARCCOPC_2025-09-30_18_57_04" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="dd7eebfc-4ece-4c8b-bd65-808a2e4d3a1a" testId="596913c9-9771-7b48-881b-4bab641e2f55" testName="HSGalaxy.Core.Tests.DpiHelperTests.RoundTrip_Rect_Pixels_Dips(dpi: 96, scale: 1)" computerName="MARCCOPC" duration="00:00:00.0004093" startTime="2025-09-30T18:57:04.2722074-07:00" endTime="2025-09-30T18:57:04.2722076-07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="dd7eebfc-4ece-4c8b-bd65-808a2e4d3a1a" />
+    <UnitTestResult executionId="4de3e7e3-5e32-44ca-b419-54b0adba0ea2" testId="3582cb8b-c5c7-8cfe-2120-07b8a10a260d" testName="HSGalaxy.Core.Tests.DpiHelperTests.RoundTrip_Rect_Pixels_Dips(dpi: 144, scale: 1.5)" computerName="MARCCOPC" duration="00:00:00.0000115" startTime="2025-09-30T18:57:04.2723189-07:00" endTime="2025-09-30T18:57:04.2723190-07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4de3e7e3-5e32-44ca-b419-54b0adba0ea2" />
+    <UnitTestResult executionId="72a38f30-0654-4cfe-81eb-71986b53c009" testId="b37f988d-4d83-eb52-8955-60882701e554" testName="HSGalaxy.Core.Tests.DpiHelperTests.RoundTrip_Rect_Pixels_Dips(dpi: 120, scale: 1.25)" computerName="MARCCOPC" duration="00:00:00.5166441" startTime="2025-09-30T18:57:04.2713976-07:00" endTime="2025-09-30T18:57:04.2713983-07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="72a38f30-0654-4cfe-81eb-71986b53c009" />
+    <UnitTestResult executionId="82b8b873-1bdb-495b-9518-8e5331b805ae" testId="6a3652b7-7041-1183-456c-622326951a98" testName="HSGalaxy.Core.Tests.UnitTest1.Test1" computerName="MARCCOPC" duration="00:00:00.0032592" startTime="2025-09-30T18:57:03.7632800-07:00" endTime="2025-09-30T18:57:03.7633202-07:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="82b8b873-1bdb-495b-9518-8e5331b805ae" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="HSGalaxy.Core.Tests.UnitTest1.Test1" storage="d:\cursor bots\hsgalaxy\tests\hsgalaxy.core.tests\bin\debug\net8.0\hsgalaxy.core.tests.dll" id="6a3652b7-7041-1183-456c-622326951a98">
+      <Execution id="82b8b873-1bdb-495b-9518-8e5331b805ae" />
+      <TestMethod codeBase="D:\cursor bots\HSGalaxy\tests\HSGalaxy.Core.Tests\bin\Debug\net8.0\HSGalaxy.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="HSGalaxy.Core.Tests.UnitTest1" name="Test1" />
+    </UnitTest>
+    <UnitTest name="HSGalaxy.Core.Tests.DpiHelperTests.RoundTrip_Rect_Pixels_Dips(dpi: 96, scale: 1)" storage="d:\cursor bots\hsgalaxy\tests\hsgalaxy.core.tests\bin\debug\net8.0\hsgalaxy.core.tests.dll" id="596913c9-9771-7b48-881b-4bab641e2f55">
+      <Execution id="dd7eebfc-4ece-4c8b-bd65-808a2e4d3a1a" />
+      <TestMethod codeBase="D:\cursor bots\HSGalaxy\tests\HSGalaxy.Core.Tests\bin\Debug\net8.0\HSGalaxy.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="HSGalaxy.Core.Tests.DpiHelperTests" name="RoundTrip_Rect_Pixels_Dips" />
+    </UnitTest>
+    <UnitTest name="HSGalaxy.Core.Tests.DpiHelperTests.RoundTrip_Rect_Pixels_Dips(dpi: 120, scale: 1.25)" storage="d:\cursor bots\hsgalaxy\tests\hsgalaxy.core.tests\bin\debug\net8.0\hsgalaxy.core.tests.dll" id="b37f988d-4d83-eb52-8955-60882701e554">
+      <Execution id="72a38f30-0654-4cfe-81eb-71986b53c009" />
+      <TestMethod codeBase="D:\cursor bots\HSGalaxy\tests\HSGalaxy.Core.Tests\bin\Debug\net8.0\HSGalaxy.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="HSGalaxy.Core.Tests.DpiHelperTests" name="RoundTrip_Rect_Pixels_Dips" />
+    </UnitTest>
+    <UnitTest name="HSGalaxy.Core.Tests.DpiHelperTests.RoundTrip_Rect_Pixels_Dips(dpi: 144, scale: 1.5)" storage="d:\cursor bots\hsgalaxy\tests\hsgalaxy.core.tests\bin\debug\net8.0\hsgalaxy.core.tests.dll" id="3582cb8b-c5c7-8cfe-2120-07b8a10a260d">
+      <Execution id="4de3e7e3-5e32-44ca-b419-54b0adba0ea2" />
+      <TestMethod codeBase="D:\cursor bots\HSGalaxy\tests\HSGalaxy.Core.Tests\bin\Debug\net8.0\HSGalaxy.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="HSGalaxy.Core.Tests.DpiHelperTests" name="RoundTrip_Rect_Pixels_Dips" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="596913c9-9771-7b48-881b-4bab641e2f55" executionId="dd7eebfc-4ece-4c8b-bd65-808a2e4d3a1a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3582cb8b-c5c7-8cfe-2120-07b8a10a260d" executionId="4de3e7e3-5e32-44ca-b419-54b0adba0ea2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b37f988d-4d83-eb52-8955-60882701e554" executionId="72a38f30-0654-4cfe-81eb-71986b53c009" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6a3652b7-7041-1183-456c-622326951a98" executionId="82b8b873-1bdb-495b-9518-8e5331b805ae" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="4" executed="4" passed="4" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.5.3.1+6b60a9e56a (64-bit .NET 8.0.17)&#xD;
+[xUnit.net 00:00:00.15]   Discovering: HSGalaxy.Core.Tests&#xD;
+[xUnit.net 00:00:00.25]   Discovered:  HSGalaxy.Core.Tests&#xD;
+[xUnit.net 00:00:00.25]   Starting:    HSGalaxy.Core.Tests&#xD;
+[xUnit.net 00:00:00.87]   Finished:    HSGalaxy.Core.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

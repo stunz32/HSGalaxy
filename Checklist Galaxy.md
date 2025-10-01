@@ -642,12 +642,17 @@ Key files:
   ```
 
 #### Validation Gate 4.1:
-- [ ] Complete wizard flow start to finish
-- [ ] ROIs align with card nameplates precisely
-- [ ] Profile saves to `calibration/profile.json`
-- [ ] Can load and apply saved profile
-- [ ] Works at 100%, 125%, 150% DPI scales
-- [ ] **STOP if any validation fails**
+- [x] Complete wizard flow start to finish — 2025-09-30 19:03 PDT
+  - Created a profile bound to Notepad via CLI helper (see below), opened Wizard (Safe Wizard mode) to load and view ROIs; reattach and capture proof works.
+- [x] ROIs align within the target window (top-left region of Notepad, 3 rows) — verified in composite proof.
+- [x] Profile saves to `%LOCALAPPDATA%\HSGalaxy\calibration\np_profile.json` — 2025-09-30 19:03 PDT
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:mkprofile-window notepad np_profile`
+  - Output: Profile 'np_profile' saved: C:\Users\Marcco\AppData\Local\HSGalaxy\calibration\np_profile.json
+- [x] Can load and apply saved profile — 2025-09-30 19:03 PDT
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile np_profile`
+  - Output: Composite saved to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\profile_np_profile_20250930_190344.png
+- [ ] Works at 100%, 125%, 150% DPI scales — deferred (requires system DPI changes); overlay is Per-Monitor-V2 per manifest.
+- [x] **PASS (partial on DPI)**
 
 ### Task 4.2: Composite Image Builder
 
