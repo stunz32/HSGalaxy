@@ -4149,3 +4149,36 @@ Remember to:
 - CLI capture-profile validation (reattach offset path preserved)
   - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile wizard1_copy`
   - Output: Composite saved to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\profile_wizard1_copy_20250930_183537.png
+
+## 2025-09-30 18:41 PDT – Export-all and rename commands; overlay capture auto-exit
+
+- Export all profiles to a temp folder
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:export-all %TEMP%\HSGalaxy\exports_all`
+  - Output:
+    Exported 'SelfTest' -> C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports_all\SelfTest.json
+    Exported 'wizard1' -> C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports_all\wizard1.json
+    Exported 'wizard1_copy' -> C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports_all\wizard1_copy.json
+    Total exported: 3
+
+- Rename wizard1_copy -> wizard1_copy_renamed (updates CurrentProfile if needed)
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:rename wizard1_copy wizard1_copy_renamed`
+  - Output: Renamed 'wizard1_copy' -> 'wizard1_copy_renamed'. New path: C:\Users\Marcco\AppData\Local\HSGalaxy\calibration\wizard1_copy_renamed.json
+
+- Verify list reflects rename
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:list`
+  - Output:
+    Profiles in C:\Users\Marcco\AppData\Local\HSGalaxy\calibration:
+    - wizard1_copy_renamed  (updated 2025-09-30 18:41)
+    - SelfTest  (updated 2025-09-29 20:34)
+    - wizard1  (updated 2025-09-29 20:06)
+
+- Render strip to verify Profile shows updated name
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- strip:render 120 dark`
+  - Output: Status strip rendered to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi120_dark_20250930_184145.png
+
+- App normal run with auto-capture and auto-exit
+  - Command: `set HSGALAXY_TEST_CAPTURE_ON_START=1; set HSGALAXY_EXIT_AFTER_TEST=1; dotnet run --project src/HSGalaxy.App`
+  - overlay.log tail shows:
+    2025-09-30T18:41:55.820-07:00	Settings.Load	CurrentProfile='wizard1_copy_renamed'
+    2025-09-30T18:41:56.188-07:00	Tray	Initialized
+    2025-09-30T18:41:58.358-07:00	Calib.Capture	C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\hotkey_wizard1_copy_renamed_20250930_184158.png
