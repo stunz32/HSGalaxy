@@ -7,6 +7,7 @@ using HSGalaxy.Core.Calibration;
 using HSGalaxy.Core.OCR;
 using HSGalaxy.UI.Capture;
 using HSGalaxy.Core.Config;
+using HSGalaxy.Core.Storage;
 
 class Program
 {
@@ -40,6 +41,10 @@ class Program
                 return await CalibRename(args);
             if (args[0].Equals("calib:delete", StringComparison.OrdinalIgnoreCase))
                 return await CalibDelete(args);
+            if (args[0].Equals("storage:validate", StringComparison.OrdinalIgnoreCase))
+                return await StorageValidate();
+            if (args[0].Equals("storage:primary-probe", StringComparison.OrdinalIgnoreCase))
+                return await StoragePrimaryProbe();
             if (args[0].Equals("strip:render", StringComparison.OrdinalIgnoreCase))
                 return await StripRender(args);
             if (args[0].Equals("wgc:fps", StringComparison.OrdinalIgnoreCase))
@@ -50,7 +55,7 @@ class Program
                 return await WgcValidate(args);
         }
 
-        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
+        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
         return 0;
     }
 
@@ -682,6 +687,41 @@ class Program
             Console.WriteLine($"Delete failed: {ex.Message}");
             return 1;
         }
+    }
+
+    private static Task<int> StorageValidate()
+    {
+        var sm = new StorageManager();
+        sm.EnsureDirectories();
+        Console.WriteLine($"Storage Root: {sm.RootPath}");
+        Console.WriteLine($"Using Fallback: {sm.IsUsingFallback}");
+        string WriteTest(string folder, string name)
+        {
+            System.IO.Directory.CreateDirectory(folder);
+            string path = System.IO.Path.Combine(folder, name);
+            System.IO.File.WriteAllText(path, $"test @ {DateTime.Now:O}");
+            return System.IO.Path.GetFullPath(path);
+        }
+        Console.WriteLine("Test files:");
+        Console.WriteLine("- " + WriteTest(sm.GetConfigPath(), "config_test.txt"));
+        Console.WriteLine("- " + WriteTest(sm.GetCalibrationPath(), "calib_test.txt"));
+        Console.WriteLine("- " + WriteTest(sm.GetDictionaryPath(), "dict_test.txt"));
+        Console.WriteLine("- " + WriteTest(sm.GetTiersPath(), "tiers_test.txt"));
+        Console.WriteLine("- " + WriteTest(sm.GetLogsPath(), "logs_test.txt"));
+        Console.WriteLine("- " + WriteTest(sm.GetDumpsPath(), "dumps_test.txt"));
+        Console.WriteLine("- " + WriteTest(sm.GetBackupsPath(), "backups_test.txt"));
+        return Task.FromResult(0);
+    }
+
+    private static Task<int> StoragePrimaryProbe()
+    {
+        string primary = @"D:\\cursor_bots\\HSGalaxy";
+        try { System.IO.Directory.CreateDirectory(primary); } catch { }
+        var sm = new StorageManager();
+        sm.EnsureDirectories();
+        Console.WriteLine($"Storage Root: {sm.RootPath}");
+        Console.WriteLine($"Using Fallback: {sm.IsUsingFallback}");
+        return Task.FromResult(0);
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
