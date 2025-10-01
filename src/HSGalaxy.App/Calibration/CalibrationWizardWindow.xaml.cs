@@ -420,6 +420,8 @@ public partial class CalibrationWizardWindow : Window
             var settings = await store.LoadAsync();
             settings.CurrentProfile = name;
             await store.SaveAsync(settings);
+            // Notify the running App (tray/status strip) to reflect the change immediately
+            HSGalaxy.App.App.NotifyCurrentProfileChanged(name);
         }
         catch { }
     }

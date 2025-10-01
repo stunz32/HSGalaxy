@@ -363,11 +363,24 @@ public partial class App : System.Windows.Application
             if (_settingsStore != null) await _settingsStore.SaveAsync(_settings);
             OverlayLogger.Log("Settings.Save", $"CurrentProfile='{name}'");
             RebuildProfilesMenu();
+            TryRenderStatusStrip();
         }
         catch (System.Exception ex)
         {
             OverlayLogger.Log("Settings.Save.Error", ex.Message);
         }
+    }
+
+    public static void NotifyCurrentProfileChanged(string name)
+    {
+        try
+        {
+            if (System.Windows.Application.Current is App app)
+            {
+                _ = app.Dispatcher.InvokeAsync(async () => await app.SetCurrentProfileAsync(name));
+            }
+        }
+        catch { }
     }
 
     private void TryRenderStatusStrip()
