@@ -4145,3 +4145,7 @@ Remember to:
 - Implementation note: Wizard now notifies the running app to apply the new CurrentProfile immediately after import/save.
   - Relevant: `App.NotifyCurrentProfileChanged(name)` updates in-memory settings, rebuilds Profiles submenu, and triggers status strip re-render instantly.
   - This ensures tray Profiles menu checks the new profile without reopening the app; status strip shows the new Profile within 0–500 ms (timer) or instantly on change.
+
+- CLI capture-profile validation (reattach offset path preserved)
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile wizard1_copy`
+  - Output: Composite saved to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\profile_wizard1_copy_20250930_183537.png
