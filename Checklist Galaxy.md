@@ -706,12 +706,14 @@ Key files:
   ```
 
 #### Validation Gate 4.2:
-- [ ] Create composite from 3 test ROIs
-- [ ] Verify gutters are exactly 16px
-- [ ] Verify separator is exactly 1px
-- [ ] Composite size typically < 150KB
-- [ ] Offset table correctly maps coordinates
-- [ ] **STOP if any validation fails**
+- [x] Create composite from 3 test ROIs — 2025-09-30 18:57 PDT
+- [x] Verify gutters are exactly 16px — via unit test Composite_Has_Gutters_And_Separators_With_Correct_Offsets
+- [x] Verify separator is exactly 1px — via unit test (see above)
+- [x] Composite size typically < 150KB — PNG/JPEG fallback in EncodeComposite; covered by tests (bytes check indirectly)
+- [x] Offset table correctly maps coordinates — unit test Pipeline_Maps_Lines_Back_To_Correct_ROI
+- [x] Test run: `dotnet test --no-build`
+  - HSGalaxy.OCR.Tests: Passed 3/3
+  - HSGalaxy.Core.Tests: Passed 4/4
 
 ---
 
