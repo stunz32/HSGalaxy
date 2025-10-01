@@ -19,6 +19,7 @@ public partial class CalibrationWizardWindow : Window
     private HSGalaxy.UI.Capture.WindowPicker.WindowInfo? _selected;
     private RoiEditorOverlayWindow? _overlay;
     private ObservableCollection<RoiRow> _roiRows = new();
+    private ObservableCollection<OcrRow> _ocrAll = new();
 
     public CalibrationWizardWindow()
     {
@@ -216,16 +217,17 @@ public partial class CalibrationWizardWindow : Window
             var lines = result.Lines.FindAll(l => l.RoiIndex == i);
             if (lines.Count == 0)
             {
-                list.Add(new OcrRow(id, "0.00", ""));
+                list.Add(new OcrRow(id, 0.0, "0.00", ""));
             }
             else
             {
                 float avg = 0f; foreach (var ln in lines) avg += ln.Confidence; avg /= lines.Count;
                 string text = string.Join(" ", lines.ConvertAll(l => l.Text));
-                list.Add(new OcrRow(id, avg.ToString("F2"), text));
+                list.Add(new OcrRow(id, avg, avg.ToString("F2"), text));
             }
         }
-        LstOcr.ItemsSource = list;
+        _ocrAll = list;
+        ApplyOcrFilters();
         TxtOcrMeta.Text = $"Source:{result.Source}  Elapsed:{result.ElapsedMs:F1}ms  Lines:{result.Lines.Count}";
         SetStatus("OCR run complete.");
     }
@@ -263,12 +265,107 @@ public partial class CalibrationWizardWindow : Window
         }
     }
 
+    private void TxtOcrFilter_Changed(object sender, TextChangedEventArgs e)
+    {
+        ApplyOcrFilters();
+    }
+
+    private void ApplyOcrFilters()
+    {
+        if (_ocrAll == null) { LstOcr.ItemsSource = null; TxtOcrCounters.Text = string.Empty; return; }
+        string roi = TxtOcrFilterRoi?.Text?.Trim() ?? string.Empty;
+        double min = 0.0;
+        if (!string.IsNullOrWhiteSpace(TxtOcrMinConf?.Text))
+        {
+            double.TryParse(TxtOcrMinConf.Text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out min);
+        }
+        var filtered = _ocrAll.Where(r =>
+            (string.IsNullOrWhiteSpace(roi) || (r.RoiId?.IndexOf(roi, StringComparison.OrdinalIgnoreCase) ?? -1) >= 0)
+            && r.ConfVal >= min).ToList();
+        var view = new ObservableCollection<OcrRow>(filtered);
+        LstOcr.ItemsSource = view;
+        int withText = filtered.Count(r => !string.IsNullOrWhiteSpace(r.Text));
+        int empty = filtered.Count - withText;
+        TxtOcrCounters.Text = $"WithText:{withText}  Empty:{empty}";
+    }
+
+    private void BtnCopyTextOnly_Click(object sender, RoutedEventArgs e)
+    {
+        if (LstOcr.Items.Count == 0) { SetStatus("No OCR results to copy."); return; }
+        var sb = new System.Text.StringBuilder();
+        foreach (var it in LstOcr.Items)
+        {
+            if (it is OcrRow row)
+            {
+                sb.AppendLine($"[{row.RoiId}]");
+                if (!string.IsNullOrWhiteSpace(row.Text)) sb.AppendLine(row.Text);
+                sb.AppendLine();
+            }
+        }
+        try { System.Windows.Clipboard.SetText(sb.ToString()); SetStatus("OCR text copied to clipboard."); }
+        catch { SetStatus("Failed to access clipboard."); }
+    }
+
     private sealed class OcrRow
     {
-        public OcrRow(string roiId, string conf, string text) { RoiId = roiId; Confidence = conf; Text = text; }
+        public OcrRow(string roiId, double confVal, string conf, string text) { RoiId = roiId; ConfVal = confVal; Confidence = conf; Text = text; }
         public string RoiId { get; }
+        public double ConfVal { get; }
         public string Confidence { get; }
         public string Text { get; }
+    }
+
+    private async void BtnExport_Click(object sender, RoutedEventArgs e)
+    {
+        var name = string.IsNullOrWhiteSpace(TxtProfile.Text) ? "Default" : TxtProfile.Text.Trim();
+        string folder = GetCalibrationFolder();
+        var profile = await CalibrationManager.LoadAsync(folder, name);
+        if (profile == null) { SetStatus($"Profile '{name}' not found in {folder}"); return; }
+        try
+        {
+            var dlg = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = Sanitize(name) + ".json",
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                InitialDirectory = folder
+            };
+            if (dlg.ShowDialog(this) == true)
+            {
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(profile, Newtonsoft.Json.Formatting.Indented);
+                await System.IO.File.WriteAllTextAsync(dlg.FileName, json, System.Text.Encoding.UTF8);
+                SetStatus($"Exported '{name}' to: {dlg.FileName}");
+            }
+        }
+        catch (Exception ex) { SetStatus($"Export failed: {ex.Message}"); }
+    }
+
+    private async void BtnImport_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                InitialDirectory = GetCalibrationFolder()
+            };
+            if (dlg.ShowDialog(this) != true) return;
+            var json = await System.IO.File.ReadAllTextAsync(dlg.FileName, System.Text.Encoding.UTF8);
+            var prof = Newtonsoft.Json.JsonConvert.DeserializeObject<CalibrationProfile>(json) ?? new CalibrationProfile();
+            var desired = TxtProfile?.Text?.Trim();
+            string name = !string.IsNullOrWhiteSpace(desired) ? desired! : (!string.IsNullOrWhiteSpace(prof.Name) ? prof.Name : System.IO.Path.GetFileNameWithoutExtension(dlg.FileName));
+            prof.Name = name;
+            string folder = GetCalibrationFolder();
+            await CalibrationManager.SaveAsync(prof, folder);
+            await SaveCurrentProfileNameAsync(name);
+            TxtProfile.Text = name;
+            SetStatus($"Imported profile '{name}' from {dlg.FileName}");
+            if (_overlay != null)
+            {
+                _overlay.SetRois(prof.Regions);
+                RefreshRoiList();
+            }
+        }
+        catch (Exception ex) { SetStatus($"Import failed: {ex.Message}"); }
     }
 
     private async void BtnCaptureProof_Click(object sender, RoutedEventArgs e)

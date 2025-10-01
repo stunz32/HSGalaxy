@@ -30,6 +30,10 @@ class Program
                 return await CalibCaptureProfile(args);
             if (args[0].Equals("calib:list", StringComparison.OrdinalIgnoreCase))
                 return await CalibList(args);
+            if (args[0].Equals("calib:export", StringComparison.OrdinalIgnoreCase))
+                return await CalibExport(args);
+            if (args[0].Equals("calib:import", StringComparison.OrdinalIgnoreCase))
+                return await CalibImport(args);
             if (args[0].Equals("strip:render", StringComparison.OrdinalIgnoreCase))
                 return await StripRender(args);
             if (args[0].Equals("wgc:fps", StringComparison.OrdinalIgnoreCase))
@@ -40,7 +44,7 @@ class Program
                 return await WgcValidate(args);
         }
 
-        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
+        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
         return 0;
     }
 
@@ -461,6 +465,87 @@ class Program
         composite.Save(path, System.Drawing.Imaging.ImageFormat.Png);
         Console.WriteLine($"Composite saved to: {path}");
         return 0;
+    }
+
+    private static async Task<int> CalibExport(string[] args)
+    {
+        if (args.Length < 3)
+        {
+            Console.WriteLine("Usage: calib:export <name> <path>\n- <path> can be a folder or a file ending with .json");
+            return 1;
+        }
+        string name = args[1];
+        string dest = args[2];
+        string folder = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+        var profile = await CalibrationManager.LoadAsync(folder, name);
+        if (profile == null)
+        {
+            Console.WriteLine($"Profile '{name}' not found in {folder}");
+            return 1;
+        }
+        try
+        {
+            string outPath = dest;
+            if (System.IO.Directory.Exists(dest) || dest.EndsWith("\\") || dest.EndsWith("/"))
+                outPath = System.IO.Path.Combine(dest, Sanitize(name) + ".json");
+            if (System.IO.Path.GetExtension(outPath).Length == 0)
+                outPath = outPath + ".json";
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(profile, Newtonsoft.Json.Formatting.Indented);
+            var full = System.IO.Path.GetFullPath(outPath);
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(full)!);
+            await System.IO.File.WriteAllTextAsync(full, json, System.Text.Encoding.UTF8);
+            Console.WriteLine($"Exported '{name}' to: {full}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Export failed: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static async Task<int> CalibImport(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("Usage: calib:import <path> [--name <newname>]");
+            return 1;
+        }
+        string path = args[1];
+        string? newName = null;
+        for (int i = 2; i < args.Length - 1; i++)
+        {
+            if (args[i].Equals("--name", StringComparison.OrdinalIgnoreCase))
+            {
+                newName = args[i + 1];
+                break;
+            }
+        }
+        try
+        {
+            var json = await System.IO.File.ReadAllTextAsync(path, System.Text.Encoding.UTF8);
+            var prof = Newtonsoft.Json.JsonConvert.DeserializeObject<CalibrationProfile>(json) ?? new CalibrationProfile();
+            string targetName = !string.IsNullOrWhiteSpace(newName) ? newName! : (!string.IsNullOrWhiteSpace(prof.Name) ? prof.Name : System.IO.Path.GetFileNameWithoutExtension(path));
+            prof.Name = targetName;
+            string folder = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR") ?? System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+            await CalibrationManager.SaveAsync(prof, folder);
+            // Set CurrentProfile
+            string cfgFolder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "config");
+            System.IO.Directory.CreateDirectory(cfgFolder);
+            string cfgPath = System.IO.Path.Combine(cfgFolder, "appsettings.json");
+            var store = new JsonConfigStore<AppSettings>(cfgPath);
+            var settings = await store.LoadAsync();
+            settings.CurrentProfile = targetName;
+            await store.SaveAsync(settings);
+            var savedPath = System.IO.Path.Combine(folder, Sanitize(targetName) + ".json");
+            Console.WriteLine($"Imported profile '{targetName}' from {System.IO.Path.GetFullPath(path)} -> {savedPath}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Import failed: {ex.Message}");
+            return 1;
+        }
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);

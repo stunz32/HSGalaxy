@@ -4093,3 +4093,49 @@ Remember to:
 - Validation:
   - Open wizard → draw a few ROIs → Run OCR. Meta shows Source and Elapsed. List shows ROI, average confidence, and concatenated text.
   - Copy All copies TSV to clipboard; Save Results writes to %TEMP%\HSGalaxy\ocr_<name>_<timestamp>.tsv.
+## 2025-09-30 18:25 PDT – Profile import/export + OCR filters
+
+- dotnet build
+  - Command: `dotnet build`
+  - Output: Build succeeded with warnings (CA1416 from System.Drawing usage). 0 errors.
+
+- List existing profiles
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:list`
+  - Output:
+    Profiles in C:\Users\Marcco\AppData\Local\HSGalaxy\calibration:
+    - SelfTest  (updated 2025-09-29 20:34)
+    - wizard1  (updated 2025-09-29 20:06)
+
+- Export profile "wizard1" to temp
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:export wizard1 %TEMP%\HSGalaxy\exports`
+  - Output: Exported 'wizard1' to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports\wizard1.json
+
+- Import exported JSON as "wizard1_copy"
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:import %TEMP%\HSGalaxy\exports\wizard1.json --name wizard1_copy`
+  - Output: Imported profile 'wizard1_copy' from C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\exports\wizard1.json -> C:\Users\Marcco\AppData\Local\HSGalaxy\calibration\wizard1_copy.json
+
+- Verify profiles list reflects the copy
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:list`
+  - Output:
+    Profiles in C:\Users\Marcco\AppData\Local\HSGalaxy\calibration:
+    - wizard1_copy  (updated 2025-09-30 18:24)
+    - SelfTest  (updated 2025-09-29 20:34)
+    - wizard1  (updated 2025-09-29 20:06)
+
+- Verify status strip picks CurrentProfile
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- strip:render 120 dark`
+  - Output: Status strip rendered to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi120_dark_20250930_182439.png
+  - Note: The drawn text uses CurrentProfile from config; after import it is 'wizard1_copy'.
+
+- Run App in Safe Wizard mode for log verification
+  - Command: `set HSGALAXY_DISABLE_OVERLAY=1; set HSGALAXY_SHOW_WIZARD=1; set HSGALAXY_WIZARD_SELFTEST=1; set HSGALAXY_EXIT_AFTER_TEST=1; dotnet run --project src/HSGalaxy.App`
+  - overlay.log tail (C:\Users\Marcco\AppData\Local\HSGalaxy\logs\overlay.log):
+    2025-09-30T18:25:11.563-07:00	Startup	SafeWizardMode: DISABLE_OVERLAY=1
+    2025-09-30T18:25:11.887-07:00	Settings.Load	CurrentProfile='wizard1_copy'
+    2025-09-30T18:25:12.801-07:00	Wizard	Loaded @ (1016,292) Size=(720x520)
+    2025-09-30T18:25:12.818-07:00	Wizard	Opened
+    2025-09-30T18:25:14.025-07:00	Wizard.SelfTest	PASS
+
+- Wizard UI updates
+  - Added buttons: "Export Profile…", "Import Profile…". Export default filename <name>.json; Import uses `TxtProfile` value if set, else JSON Name/filename. Import persists and sets CurrentProfile, and updates overlay ROI list if the overlay is open.
+  - OCR panel: added Filter ROI textbox and Min Conf textbox; results list updates live; counters show WithText/Empty; new "Copy Text Only" copies `[ROI]` headers with text per ROI.

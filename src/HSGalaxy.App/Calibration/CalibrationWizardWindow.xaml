@@ -45,6 +45,8 @@
                         <Button Content="Load" Margin="6,0,0,0" Click="BtnLoad_Click"/>
                         <Button Content="Reattach" Margin="6,0,0,0" Click="BtnReattach_Click"/>
                         <Button Content="Save" Margin="6,0,0,0" Click="BtnSave_Click"/>
+                        <Button Content="Export Profile…" Margin="6,0,0,0" Click="BtnExport_Click"/>
+                        <Button Content="Import Profile…" Margin="6,0,0,0" Click="BtnImport_Click"/>
                         <Button Content="Clear ROIs" Margin="6,0,0,0" Click="BtnClear_Click"/>
                     </StackPanel>
                     <TextBlock TextWrapping="Wrap" Opacity="0.75" Margin="0,0,0,6">
@@ -85,8 +87,16 @@ Press and drag on the overlay to create a ROI. Drag inside a ROI to move it. Pre
                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
                                 <Button Content="Run OCR" Click="BtnRunOcr_Click"/>
                                 <Button Content="Copy All" Margin="6,0,0,0" Click="BtnCopyAll_Click"/>
+                                <Button Content="Copy Text Only" Margin="6,0,0,0" Click="BtnCopyTextOnly_Click"/>
                                 <Button Content="Save Results" Margin="6,0,0,0" Click="BtnSaveResults_Click"/>
                                 <TextBlock x:Name="TxtOcrMeta" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
+                                <TextBlock Text="Filter ROI:" VerticalAlignment="Center"/>
+                                <TextBox x:Name="TxtOcrFilterRoi" Width="120" Margin="6,0,12,0" TextChanged="TxtOcrFilter_Changed"/>
+                                <TextBlock Text="Min Conf:" VerticalAlignment="Center"/>
+                                <TextBox x:Name="TxtOcrMinConf" Width="60" Margin="6,0,12,0" TextChanged="TxtOcrFilter_Changed"/>
+                                <TextBlock x:Name="TxtOcrCounters" VerticalAlignment="Center"/>
                             </StackPanel>
                             <ListView x:Name="LstOcr" Height="200">
                                 <ListView.View>
