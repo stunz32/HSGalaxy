@@ -4593,3 +4593,8 @@ Remember to:
   - `App ZIP:   C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_215903\HSGalaxy.App_Release_win-x64_fd.zip  (13.75 MB)`
   - `CLI ZIP:   C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_215903\HSGalaxy.CLI_Release_win-x64_fd.zip  (13.65 MB)`
   - `DIST ROOT: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_215903`
+
+## 2025-10-03 23:24 -07:00 – Version tag
+
+- Command: `git tag -a v0.1.0 -m 'Phase 5.4/4.1/1.2 complete; Wizard offline/429; DPI; long-path; UX; evidence.'; git push origin v0.1.0`
+- Result: tag v0.1.0 pushed to origin.
