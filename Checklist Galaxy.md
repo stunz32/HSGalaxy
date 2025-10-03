@@ -4583,3 +4583,13 @@ Remember to:
       strip:render
       wgc:fps/window/validate
       evidence:bundle/evidence:report
+
+## 2025-10-03 23:20 -07:00 – Release artifacts (publish script)
+
+- Command:
+  - `powershell -ExecutionPolicy Bypass -File tools\Scripts\publish.ps1`
+
+- Output (excerpt):
+  - `App ZIP:   C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_215903\HSGalaxy.App_Release_win-x64_fd.zip  (13.75 MB)`
+  - `CLI ZIP:   C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_215903\HSGalaxy.CLI_Release_win-x64_fd.zip  (13.65 MB)`
+  - `DIST ROOT: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_215903`
