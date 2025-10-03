@@ -4325,3 +4325,17 @@ Remember to:
   2025-10-02T21:04:27.1607793-07:00	Wizard.OCR.Fallback	Forced 429 for test
   2025-10-02T21:04:27.1656529-07:00	Capture.Frame	240x80 at 50,50
   2025-10-02T21:04:27.1826096-07:00	Wizard.OCR.Run	Source=SimulatedOCR; Lines=3; ElapsedMs=15.5
+
+## 2025-10-02 21:05 -07:00 – Phase 4.1 DPI cross-checks (strip render proof)
+
+- Commands (PowerShell):
+  - `dotnet run --project src/HSGalaxy.CLI -- strip:render 120 dark`
+  - `dotnet run --project src/HSGalaxy.CLI -- strip:render 144 dark`
+
+- Output files:
+  - 125% (120 DPI): `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi120_dark_20251002_210542.png`
+  - 150% (144 DPI): `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi144_dark_20251002_210551.png`
+
+- Notes:
+  - App manifest declares Per-Monitor V2; overlay.log contains `DPI.Awareness	PerMonitor` during Wizard open on 2025-10-02 21:02–21:04.
+  - Visual inspection recommended at OS scales 125% and 150%; CLI renders confirm text scaling and canvas height adjustments.
