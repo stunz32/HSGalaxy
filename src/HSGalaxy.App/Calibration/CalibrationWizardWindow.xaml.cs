@@ -12,6 +12,8 @@ using HSGalaxy.UI.Capture;
 using HSGalaxy.Core.OCR;
 using HSGalaxy.Diagnostics;
 using Microsoft.VisualBasic;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace HSGalaxy.App.Calibration;
 
@@ -81,6 +83,35 @@ public partial class CalibrationWizardWindow : Window
             TxtOcrOffline.Visibility = (offline || !result.Source.StartsWith("Azure", StringComparison.OrdinalIgnoreCase)) ? Visibility.Visible : Visibility.Collapsed;
             SetStatus("OCR self-test complete.");
             try { OverlayLogger.Log("Wizard.OCR.Run", $"Source={result.Source}; Lines={result.Lines.Count}; ElapsedMs={result.ElapsedMs:F1}"); } catch { }
+
+            // Optional: capture a proof PNG of the wizard if requested
+            try
+            {
+                var captureFlag = Environment.GetEnvironmentVariable("HSGALAXY_WIZARD_SELFTEST_CAPTURE");
+                if (string.Equals(captureFlag, "1", StringComparison.OrdinalIgnoreCase))
+                {
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        var rtb = new RenderTargetBitmap((int)ActualWidth, (int)ActualHeight, 96, 96, PixelFormats.Pbgra32);
+                        rtb.Render(this);
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(rtb));
+                        var folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HSGalaxy");
+                        System.IO.Directory.CreateDirectory(folder);
+                        var path = System.IO.Path.Combine(folder, $"wizard_selftest_{(offline?"offline":"azure")}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+                        using (var fs = System.IO.File.Create(path))
+                        {
+                            encoder.Save(fs);
+                        }
+                        try { OverlayLogger.Log("Wizard.SelfTest.Capture", path); } catch { }
+                        SetStatus($"Self-test capture saved: {path}");
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                try { OverlayLogger.Log("Wizard.SelfTest.Capture.Error", ex.Message); } catch { }
+            }
         }
         catch (Exception ex)
         {

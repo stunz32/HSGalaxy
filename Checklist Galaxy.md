@@ -4449,3 +4449,30 @@ Remember to:
 - Extra status strip (safe theme)
   - Command: `dotnet run --project src/HSGalaxy.CLI -- strip:render 120 safe`
   - Output file: `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi120_safe_20251002_214525.png`
+
+## 2025-10-03 22:28 -07:00 – Visual proof: Wizard Offline Mode screenshots
+
+- Added automated self-test capture in Wizard: when `$env:HSGALAXY_WIZARD_SELFTEST_CAPTURE=1`, the Wizard window is captured to PNG after OCR self-test.
+
+- Offline fallback capture
+  - Env:
+    - `$env:HSGALAXY_AZURE_VISION_ENDPOINT='https://example.cognitiveservices.azure.com'`
+    - `$env:HSGALAXY_AZURE_VISION_KEY='fakekey'`
+    - `$env:HSGALAXY_OCR_FORCE_OFFLINE='1'`
+    - `$env:HSGALAXY_SHOW_WIZARD='1'`
+    - `$env:HSGALAXY_WIZARD_SELFTEST='1'`
+    - `$env:HSGALAXY_WIZARD_SELFTEST_CAPTURE='1'`
+    - `$env:HSGALAXY_EXIT_AFTER_TEST='1'`
+  - Command: `dotnet run --project src/HSGalaxy.App`
+  - overlay.log excerpt:
+    2025-10-02T21:46:58.7152493-07:00	Wizard.OCR.Run	Source=SimulatedOCR; Lines=5; ElapsedMs=18.0
+    2025-10-02T21:46:58.8262430-07:00	Wizard.SelfTest.Capture	C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\wizard_selftest_offline_20251002_214658.png
+  - Screenshot: `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\wizard_selftest_offline_20251002_214658.png`
+
+- 429 fallback capture
+  - Env: same as above, but set `$env:HSGALAXY_OCR_FORCE_OFFLINE=''` and `$env:HSGALAXY_OCR_FORCE_429='1'`
+  - Command: `dotnet run --project src/HSGalaxy.App`
+  - overlay.log excerpt:
+    2025-10-02T21:47:19.7460143-07:00	Wizard.OCR.Run	Source=SimulatedOCR; Lines=5; ElapsedMs=16.0
+    2025-10-02T21:47:19.8542458-07:00	Wizard.SelfTest.Capture	C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\wizard_selftest_offline_20251002_214719.png
+  - Screenshot: `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\wizard_selftest_offline_20251002_214719.png`
