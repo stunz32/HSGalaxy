@@ -65,6 +65,12 @@ class Program
                 return await CardsRank(args);
             if (args[0].Equals("readback:test", StringComparison.OrdinalIgnoreCase))
                 return await ReadbackTest();
+            if (args[0].Equals("data:init", StringComparison.OrdinalIgnoreCase))
+                return await DataInit();
+            if (args[0].Equals("dict:build", StringComparison.OrdinalIgnoreCase))
+                return await DictBuild();
+            if (args[0].Equals("resolve:test", StringComparison.OrdinalIgnoreCase))
+                return await ResolveTest(args);
             if (args[0].Equals("ocr:gate5_2", StringComparison.OrdinalIgnoreCase))
                 return await OcrGate52();
         }
@@ -1135,5 +1141,92 @@ class Program
             return 1;
         }
     }
-}
 
+    private static async Task<int> DataInit()
+    {
+        try
+        {
+            var mgr = new HSGalaxy.Core.Data.HearthstoneDataManager();
+            await mgr.InitializeAsync();
+            Console.WriteLine($"Cards loaded: {mgr.Database.Cards.Count}");
+            string cache = mgr.CacheRoot;
+            Console.WriteLine($"Cache: {cache}");
+            bool ok = mgr.Database.Cards.Count > 2000;
+            Console.WriteLine(ok ? "Data init: PASS" : "Data init: FAIL");
+            return ok ? 0 : 1;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"data:init failed: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static async Task<int> DictBuild()
+    {
+        try
+        {
+            var mgr = new HSGalaxy.Core.Data.HearthstoneDataManager();
+            HSGalaxy.Core.Data.HearthstoneDataManager.CardDatabase db;
+            try { await mgr.InitializeAsync(); db = mgr.Database; }
+            catch
+            {
+                // Fallback: load from cache directly if available
+                string cacheRoot = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "cache", "hearthstone");
+                string cacheFile = System.IO.Path.Combine(cacheRoot, "cards_enUS_latest.json");
+                if (!System.IO.File.Exists(cacheFile)) throw;
+                var raw = await System.IO.File.ReadAllTextAsync(cacheFile, System.Text.Encoding.UTF8);
+                var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var cards = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<HSGalaxy.Core.Data.HearthstoneDataManager.HsJsonCard>>(raw, opts) ?? new System.Collections.Generic.List<HSGalaxy.Core.Data.HearthstoneDataManager.HsJsonCard>();
+                db = HSGalaxy.Core.Data.HearthstoneDataManager.CardDatabase.FromHsJson(cards);
+            }
+            var path = HSGalaxy.Core.Resolve.DictionaryBuilder.Build(db, "enUS");
+            var fi = new System.IO.FileInfo(path);
+            Console.WriteLine($"Dictionary: {fi.FullName}  Size:{fi.Length} bytes");
+            bool ok = fi.Length > 100_000 && fi.Length < 5_000_000; // sanity range
+            Console.WriteLine(ok ? "Dict build: PASS" : "Dict build: WARN size");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"dict:build failed: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static Task<int> ResolveTest(string[] args)
+    {
+        try
+        {
+            if (args.Length < 3)
+            {
+                Console.WriteLine("Usage: resolve:test <playerClass> <text...>");
+                return Task.FromResult(1);
+            }
+            string playerClass = args[1];
+            string text = string.Join(' ', args, 2, args.Length - 2);
+            var mgr = new HSGalaxy.Core.Data.HearthstoneDataManager();
+            HSGalaxy.Core.Data.HearthstoneDataManager.CardDatabase db;
+            try { mgr.InitializeAsync().GetAwaiter().GetResult(); db = mgr.Database; }
+            catch
+            {
+                string cacheRoot = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "cache", "hearthstone");
+                string cacheFile = System.IO.Path.Combine(cacheRoot, "cards_enUS_latest.json");
+                if (!System.IO.File.Exists(cacheFile)) throw;
+                var raw = System.IO.File.ReadAllText(cacheFile, System.Text.Encoding.UTF8);
+                var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var cards = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<HSGalaxy.Core.Data.HearthstoneDataManager.HsJsonCard>>(raw, opts) ?? new System.Collections.Generic.List<HSGalaxy.Core.Data.HearthstoneDataManager.HsJsonCard>();
+                db = HSGalaxy.Core.Data.HearthstoneDataManager.CardDatabase.FromHsJson(cards);
+            }
+            var resolver = new HSGalaxy.Core.Resolve.CardResolver(db);
+            var res = resolver.Resolve(text, 0.85f, playerClass);
+            Console.WriteLine($"OCR='{text}' -> Card='{res.CardName}' Conf={res.Confidence:F2} Reason={res.Reason}");
+            return Task.FromResult(0);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"resolve:test failed: {ex.Message}");
+            return Task.FromResult(1);
+        }
+    }
+}
