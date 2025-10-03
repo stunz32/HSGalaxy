@@ -1041,7 +1041,7 @@ Status (2025-10-03):
 ### Task 6.1: HearthstoneJSON Data Ingestion
 
 #### Subtasks:
-- [ ] Create `HearthstoneDataManager.cs`:
+- [x] Create `HearthstoneDataManager.cs` (src/HSGalaxy.Core/Data/HearthstoneDataManager.cs):
   ```csharp
   /// <summary>
   /// Fetches and caches HearthstoneJSON data
@@ -1061,7 +1061,7 @@ Status (2025-10-03):
       public async Task InitializeAsync()
   }
   ```
-- [ ] Parse card data:
+- [x] Parse card data:
   ```csharp
   public class Card
   {
@@ -1084,14 +1084,14 @@ Status (2025-10-03):
 #### Validation Gate 6.1:
 - [x] Download and parse card database — via data:init/cache (2025-10-03)
 - [x] Verify > 2000 cards loaded — PASS (cache count > 2000)
-- [ ] Test arena eligibility filtering
+- [x] Test arena eligibility filtering — PASS (Total˜33006, Eligible˜6762)
 - [x] Cache persists across restarts — PASS (%LOCALAPPDATA%\\HSGalaxy\\cache\\hearthstone)
 - [ ] **STOP if any validation fails**
 
 ### Task 6.2: SymSpell Dictionary Builder
 
 #### Subtasks:
-- [ ] Create `DictionaryBuilder.cs`:
+- [x] Create `DictionaryBuilder.cs` (src/HSGalaxy.Core/Resolve/DictionaryBuilder.cs):
   ```csharp
   /// <summary>
   /// Builds SymSpell dictionaries for fuzzy matching
@@ -1117,7 +1117,7 @@ Status (2025-10-03):
       }
   }
   ```
-- [ ] Calculate frequencies:
+- [x] Calculate frequencies:
   ```csharp
   /// <summary>
   /// Assigns frequency based on rarity
@@ -1130,13 +1130,13 @@ Status (2025-10-03):
 - [x] Dictionary file created in `dict/enUS.symspell` — 2025-10-03
 - [x] File size reasonable (< 5MB) — PASS (˜ 0.7 MB)
 - [x] Load dictionary and test lookups — PASS (resolve:test)
-- [ ] Fuzzy match "Firebll" -> "Fireball"
+- [x] Fuzzy match "Firebll" -> "Fireball" — PASS (resolve:test)
 - [ ] **STOP if any validation fails**
 
 ### Task 6.3: Card Name Resolver
 
 #### Subtasks:
-- [ ] Create `CardResolver.cs`:
+- [x] Create `CardResolver.cs` (src/HSGalaxy.Core/Resolve/CardResolver.cs):
   ```csharp
   /// <summary>
   /// Resolves OCR text to card names
@@ -1156,7 +1156,7 @@ Status (2025-10-03):
       public ResolveResult Resolve(string ocrText, float ocrConfidence, string playerClass)
   }
   ```
-- [ ] Implement resolution logic:
+- [x] Implement resolution logic:
   ```csharp
   /// <summary>
   /// Multi-stage resolution pipeline
@@ -1206,7 +1206,7 @@ Status (2025-10-03):
 #### Validation Gate 6.3:
 - [ ] Test with 50 correct card names - 100% accuracy
 - [ ] Test with 50 OCR errors - >90% corrected
-- [ ] Test class filtering - only valid cards returned
+- [x] Test class filtering - only valid cards returned — PASS (e.g., PRIEST "Fireball" -> neutral/valid alt)
 - [ ] Test ambiguity detection - flags uncertain matches
 - [ ] **STOP if any validation fails**
 
@@ -4663,4 +4663,5 @@ Order (best?worst): 122 112 97 61 43
 - Dist root: \Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_220212`
 - Evidence ZIP present: 
 - Evidence HTML present: 
+
 
