@@ -4631,3 +4631,15 @@ Remember to:
 
 - Added GitHub Actions workflow at `.github/workflows/ci.yml`.
 - Builds, tests, and publishes App/CLI (win-x64), and uploads artifacts on push/PR.
+## 2025-10-02 22:08 -07:00 – cards:rank demo (numeric fallback)
+
+- Command: dotnet run --project src/HSGalaxy.CLI -- cards:rank 122 97 43 112 61
+- Output:
+Cards and scores:
+Card 122	Score:122.00
+Card 112	Score:112.00
+Card 97	Score:97.00
+Card 61	Score:61.00
+Card 43	Score:43.00
+Order (best→worst): 122 112 97 61 43
+
