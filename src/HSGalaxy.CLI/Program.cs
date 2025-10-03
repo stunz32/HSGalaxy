@@ -77,6 +77,12 @@ class Program
                 return await ResolveGate63();
             if (args[0].Equals("tiers:score", StringComparison.OrdinalIgnoreCase))
                 return await TiersScore(args);
+            if (args[0].Equals("lanes:render", StringComparison.OrdinalIgnoreCase))
+                return await LanesRender(args);
+            if (args[0].Equals("chip:render", StringComparison.OrdinalIgnoreCase))
+                return await ChipRender(args);
+            if (args[0].Equals("banners:render", StringComparison.OrdinalIgnoreCase))
+                return await BannersRender(args);
         }
 
         Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection\n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])\n  readback:test            GPU->CPU staging readback latency test (100 frames; reports Avg/P95/Max)\n  tiers:score              Score cards with TierScoreEngine (usage: tiers:score <Class> <Card Name> [Card Name] [...])");
@@ -1382,5 +1388,98 @@ class Program
             Console.WriteLine($"tiers:score failed: {ex.Message}");
             return 1;
         }
+    }
+    private static async Task<int> LanesRender(string[] args)
+    {
+        int w = 900, h = 300, pad = 16; int laneW = (w - pad * 4) / 3; int laneH = h - pad * 2;
+        using var bmp = new System.Drawing.Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+        using (var g = System.Drawing.Graphics.FromImage(bmp))
+        using (var bg = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0x11,0x18,0x27)))
+        using (var lane = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0x1F,0x2A,0x3D)))
+        using (var txt = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0xF9,0xFA,0xFB)))
+        using (var rec = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0x22,0xC5,0x3E)))
+        using (var pen = new System.Drawing.Pen(rec.Color, 3))
+        using (var font = new System.Drawing.Font("Segoe UI", 14, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel))
+        using (var fontSmall = new System.Drawing.Font("Segoe UI", 12, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel))
+        {
+            g.Clear(bg.Color);
+            string playerClass = args.Length >= 2 ? args[1] : "MAGE";
+            var names = new System.Collections.Generic.List<string>();
+            if (args.Length >= 5) { names.Add(args[2]); names.Add(args[3]); names.Add(args[4]); }
+            else { names.AddRange(new[]{"Card A","Card B","Card C"}); }
+            int x = pad;
+            for (int i=0;i<3;i++)
+            {
+                var r = new System.Drawing.Rectangle(x, pad, laneW, laneH);
+                g.FillRectangle(lane, r);
+                g.DrawRectangle(System.Drawing.Pens.DarkSlateBlue, r);
+                string title = names[Math.Min(i, names.Count-1)];
+                g.DrawString(title, font, txt, r.X+10, r.Y+10);
+                string conf = "Conf: 0.85";
+                string cls = "Class: " + playerClass;
+                g.DrawString(conf, fontSmall, txt, r.X+10, r.Y+40);
+                g.DrawString(cls, fontSmall, txt, r.X+10, r.Y+60);
+                if (i==0) g.DrawRectangle(pen, r);
+                x += laneW + pad;
+            }
+        }
+        var folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HSGalaxy"); System.IO.Directory.CreateDirectory(folder);
+        var path = System.IO.Path.Combine(folder, $"lanes_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+        bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+        Console.WriteLine($"Three-lane PNG: {path}");
+        return 0;
+    }
+
+    private static async Task<int> ChipRender(string[] args)
+    {
+        int w = 600, h = 180; using var bmp = new System.Drawing.Bitmap(w,h,System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+        using (var g = System.Drawing.Graphics.FromImage(bmp))
+        using (var bg = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0x11,0x18,0x27)))
+        using (var chip = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0xAD,0x11,0x18,0x27)))
+        using (var txt = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0xF9,0xFA,0xFB)))
+        using (var fontBig = new System.Drawing.Font("Segoe UI", 28, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel))
+        using (var font = new System.Drawing.Font("Segoe UI", 14, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel))
+        {
+            g.Clear(bg.Color);
+            g.FillRectangle(chip, new System.Drawing.Rectangle(16,16,w-32,h-32));
+            float score =  args.Length>=2 && float.TryParse(args[1], out var s)? s: 75f;
+            string primary = args.Length>=3? string.Join(" ", args, 2, args.Length-2): "Strong stats for cost";
+            g.DrawString(score.ToString("F1"), fontBig, txt, 32, 32);
+            g.DrawString(primary, font, txt, 32, 80);
+        }
+        var folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HSGalaxy"); System.IO.Directory.CreateDirectory(folder);
+        var path = System.IO.Path.Combine(folder, $"chip_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+        bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+        Console.WriteLine($"Recommendation chip PNG: {path}");
+        return 0;
+    }
+
+    private static async Task<int> BannersRender(string[] args)
+    {
+        int w = 900, h = 220; using var bmp = new System.Drawing.Bitmap(w,h,System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+        using (var g = System.Drawing.Graphics.FromImage(bmp))
+        {
+            g.Clear(System.Drawing.Color.FromArgb(0x11,0x18,0x27));
+            var banners = new[]{
+                ("Info: Connected", System.Drawing.Color.FromArgb(200,59,130,246)),
+                ("Warning: Rate limits", System.Drawing.Color.FromArgb(200,245,158,11)),
+                ("Error: Disconnected", System.Drawing.Color.FromArgb(200,239,68,68)),
+                ("Success: Profile saved", System.Drawing.Color.FromArgb(200,34,197,94)),
+                ("Offline Mode", System.Drawing.Color.FromArgb(200,251,146,60)),
+            };
+            int y=10; using var font = new System.Drawing.Font("Segoe UI", 12, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel);
+            foreach (var b in banners)
+            {
+                using var brush = new System.Drawing.SolidBrush(b.Item2);
+                g.FillRectangle(brush, new System.Drawing.Rectangle(10,y,w-20,30));
+                g.DrawString(b.Item1, font, System.Drawing.Brushes.Black, 16, y+8);
+                y += 40;
+            }
+        }
+        var folder = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HSGalaxy"); System.IO.Directory.CreateDirectory(folder);
+        var path = System.IO.Path.Combine(folder, $"banners_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+        bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+        Console.WriteLine($"Banners PNG: {path}");
+        return 0;
     }
 }

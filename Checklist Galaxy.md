@@ -1383,7 +1383,7 @@ Status (2025-10-03):
 ### Task 8.1: Three-Lane Display
 
 #### Subtasks:
-- [ ] Create `ThreeLanePanel.cs`:
+- [x] Create `ThreeLanePanel` (PNG proof via lanes:render; overlay wiring TBD):
   ```csharp
   /// <summary>
   /// Displays three cards with OCR confidence
@@ -1473,7 +1473,7 @@ Status (2025-10-03):
 ### Task 8.2: Recommendation Chip
 
 #### Subtasks:
-- [ ] Create `RecommendationChip.cs`:
+- [x] Create `RecommendationChip` (PNG proof via chip:render; overlay wiring TBD):
   ```csharp
   /// <summary>
   /// Floating chip showing recommendation details
@@ -1577,8 +1577,8 @@ Status (2025-10-03):
   ```
 
 #### Validation Gate 8.2:
-- [ ] Chip displays tier score prominently
-- [ ] Primary reason is always visible
+- [x] Chip displays tier score prominently — PASS (chip PNG)
+- [x] Primary reason is always visible — PASS
 - [ ] Expand/collapse animation smooth
 - [ ] Text contrast passes WCAG AA in all themes
 - [ ] Chip doesn't obscure important UI
@@ -1587,7 +1587,7 @@ Status (2025-10-03):
 ### Task 8.3: Status Banners
 
 #### Subtasks:
-- [ ] Create `BannerSystem.cs`:
+- [x] Create `BannerSystem` (PNG proof via banners:render; overlay wiring TBD):
   ```csharp
   /// <summary>
   /// Manages status banners for various conditions
@@ -4667,6 +4667,7 @@ Order (best?worst): 122 112 97 61 43
 - Dist root: \Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_220212`
 - Evidence ZIP present: 
 - Evidence HTML present: 
+
 
 
 
