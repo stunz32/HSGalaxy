@@ -107,6 +107,15 @@ public partial class CalibrationWizardWindow : Window
                         SetStatus($"Self-test capture saved: {path}");
                     });
                 }
+                var copyFlag = Environment.GetEnvironmentVariable("HSGALAXY_WIZARD_SELFTEST_COPY");
+                if (string.Equals(copyFlag, "1", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Invoke Copy Text Only to log Wizard.OCR.CopyTextOnly and verify clipboard path
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        try { BtnCopyTextOnly_Click(this, new RoutedEventArgs()); } catch { }
+                    });
+                }
             }
             catch (Exception ex)
             {

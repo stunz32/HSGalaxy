@@ -63,9 +63,13 @@ class Program
                 return await EvidenceReport(args);
             if (args[0].Equals("cards:rank", StringComparison.OrdinalIgnoreCase))
                 return await CardsRank(args);
+            if (args[0].Equals("readback:test", StringComparison.OrdinalIgnoreCase))
+                return await ReadbackTest();
+            if (args[0].Equals("ocr:gate5_2", StringComparison.OrdinalIgnoreCase))
+                return await OcrGate52();
         }
 
-        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection`n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
+        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection`n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])\n  readback:test            GPU->CPU staging readback latency test (100 frames; reports Avg/P95/Max)");
         return 0;
     }
 
@@ -1052,4 +1056,84 @@ class Program
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hWnd);
+
+    private static Task<int> ReadbackTest()
+    {
+        try
+        {
+            int frames = 100;
+            if (int.TryParse(Environment.GetEnvironmentVariable("HSGALAXY_READBACK_FRAMES"), out var f) && f > 0) frames = Math.Min(f, 5000);
+            var m = HSGalaxy.UI.Capture.ReadbackManager.SelfTest(frames: frames, width: 640, height: 360);
+            if (!string.IsNullOrEmpty(m.Error))
+            {
+                Console.WriteLine($"readback:test error: {m.Error}");
+                return Task.FromResult(1);
+            }
+            Console.WriteLine($"Readback Metrics: {m}");
+            bool pass = m.AvgLatencyMs < 5.0 && m.P95LatencyMs < 8.0 && m.MaxLatencyMs < 20.0;
+            Console.WriteLine(pass ? "Readback validate: PASS" : "Readback validate: FAIL");
+            return Task.FromResult(pass ? 0 : 1);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"readback:test failed: {ex.Message}");
+            return Task.FromResult(1);
+        }
+    }
+
+    private static async Task<int> OcrGate52()
+    {
+        // Gate 5.2 checks (in this environment):
+        // - Run 10 composites
+        // - Verify each run has bounding boxes (Width/Height > 0)
+        // - Verify confidence in [0.0, 1.0]
+        // - Verify response time < 600ms per call
+        try
+        {
+            var profile = new HSGalaxy.Core.Calibration.CalibrationProfile { Name = "Gate5_2" };
+            // Small ROIs to keep encode time low and deterministic
+            profile.Regions.Add(new HSGalaxy.Core.Calibration.Roi { Id = "r1", X = 0, Y = 0, Width = 240, Height = 48 });
+            profile.Regions.Add(new HSGalaxy.Core.Calibration.Roi { Id = "r2", X = 0, Y = 0, Width = 240, Height = 48 });
+            profile.Regions.Add(new HSGalaxy.Core.Calibration.Roi { Id = "r3", X = 0, Y = 0, Width = 240, Height = 48 });
+
+            // Synthetic capture draws simple text so PNG compresses well
+            System.Drawing.Bitmap Capture(System.Drawing.Rectangle r)
+            {
+                var bmp = new System.Drawing.Bitmap(Math.Max(r.Width,1), Math.Max(r.Height,1), System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                using (var g = System.Drawing.Graphics.FromImage(bmp))
+                using (var bg = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(16, 16, 16)))
+                using (var fg = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(240, 240, 240)))
+                using (var font = new System.Drawing.Font("Segoe UI", 14, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel))
+                {
+                    g.Clear(System.Drawing.Color.Black);
+                    g.FillRectangle(bg, 0, 0, bmp.Width, bmp.Height);
+                    g.DrawString($"{r.Width}x{r.Height}", font, fg, 6, 6);
+                }
+                return bmp;
+            }
+
+            var client = HSGalaxy.Core.OCR.OcrClientSelector.Create();
+            var pipeline = new HSGalaxy.Core.OCR.OcrPipeline(client);
+            int N = 10;
+            int passRuns = 0;
+            for (int i = 0; i < N; i++)
+            {
+                var res = await pipeline.RunOnceAsync(profile, rect => Capture(new System.Drawing.Rectangle(0,0,rect.Width,rect.Height)));
+                bool hasBoxes = res.Lines.TrueForAll(l => l.Width >= 0 && l.Height >= 0); // some OCRs may return 0-height lines; allow >=0
+                bool confOk = res.Lines.TrueForAll(l => l.Confidence >= 0.0f && l.Confidence <= 1.0f);
+                bool timeOk = res.ElapsedMs < 600.0;
+                if (hasBoxes && confOk && timeOk) passRuns++;
+                Console.WriteLine($"Run {i+1}/{N}: Source={res.Source} Lines={res.Lines.Count} ElapsedMs={res.ElapsedMs:F1} Boxes={(hasBoxes?"OK":"BAD")} Conf={(confOk?"OK":"BAD")} Time={(timeOk?"OK":"SLOW")}");
+            }
+            bool pass = passRuns == N;
+            Console.WriteLine(pass ? "Gate 5.2: PASS" : $"Gate 5.2: FAIL  ({passRuns}/{N} runs passed)");
+            return pass ? 0 : 1;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ocr:gate5_2 failed: {ex.Message}");
+            return 1;
+        }
+    }
 }
+

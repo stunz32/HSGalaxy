@@ -46,6 +46,13 @@ try {
 
     Write-Host ("App ZIP:   " + $zipApp + "  (" + [math]::Round($appSize/1MB,2) + " MB)")
     Write-Host ("CLI ZIP:   " + $zipCli + "  (" + [math]::Round($cliSize/1MB,2) + " MB)")
+
+    # Optionally copy evidence bundle/report into dist root if present
+    $evidenceZip = Join-Path $temp (Get-ChildItem -Path $temp -Filter 'evidence_*.zip' | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { $_.Name })
+    $evidenceHtml = Join-Path $temp (Get-ChildItem -Path $temp -Filter 'report_evidence_*.html' | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { $_.Name })
+    if (Test-Path $evidenceZip) { Copy-Item $evidenceZip -Destination (Join-Path $distRoot (Split-Path $evidenceZip -Leaf)) -Force }
+    if (Test-Path $evidenceHtml) { Copy-Item $evidenceHtml -Destination (Join-Path $distRoot (Split-Path $evidenceHtml -Leaf)) -Force }
+
     Write-Host ("DIST ROOT: " + $distRoot)
 }
 finally {
