@@ -4339,3 +4339,8 @@ Remember to:
 - Notes:
   - App manifest declares Per-Monitor V2; overlay.log contains `DPI.Awareness	PerMonitor` during Wizard open on 2025-10-02 21:02–21:04.
   - Visual inspection recommended at OS scales 125% and 150%; CLI renders confirm text scaling and canvas height adjustments.
+
+## 2025-10-02 21:08 -07:00 – Phase 1.2 Long-path runtime (note)
+
+- Status: PASS (see 2025-10-02 20:52 CLI fs:longpath — len=401)
+- App writes indirectly to long paths via StorageManager primary root `D:\\cursor_bots\\HSGalaxy` and fallback `%LOCALAPPDATA%\\HSGalaxy` (logs/calibration). overlay.log creation under primary path confirmed above.
