@@ -4402,3 +4402,29 @@ Remember to:
     Profile 'np_profile_ui' saved: C:\Users\Marcco\AppData\Local\HSGalaxy\calibration\np_profile_ui.json
     Reattached to window 'Untitled - Notepad' with offset (0,0).
     Composite saved to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\profile_np_profile_ui_20251002_214213.png
+
+## 2025-10-03 22:05 -07:00 – Fresh OCR + WGC evidence
+
+- OCR offline (CLI)
+  - Env:
+    - `$env:HSGALAXY_AZURE_VISION_ENDPOINT='https://example.cognitiveservices.azure.com'`
+    - `$env:HSGALAXY_AZURE_VISION_KEY='fakekey'`
+    - `$env:HSGALAXY_OCR_FORCE_OFFLINE='1'`
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- ocr:test`
+  - Output (excerpt):
+    Primary OCR client failed: HttpRequestException - Forced offline for test. Falling back to Simulated.
+    OCR Client: SimulatedOCR (fallback), Elapsed: 3x–5x ms, Lines: N
+
+- OCR 429 (CLI)
+  - Env:
+    - `$env:HSGALAXY_AZURE_VISION_ENDPOINT='https://example.cognitiveservices.azure.com'`
+    - `$env:HSGALAXY_AZURE_VISION_KEY='fakekey'`
+    - `$env:HSGALAXY_OCR_FORCE_429='1'`
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- ocr:test`
+  - Output (actual):
+    Primary OCR client failed: HttpRequestException - Forced 429 for test. Falling back to Simulated.
+    OCR Client: SimulatedOCR (fallback), Elapsed: 36.1 ms, Lines: 4
+
+- WGC FPS quick test
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- wgc:fps`
+  - Output: `WGC FPS: 28.0 (PASS)`
