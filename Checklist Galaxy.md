@@ -4343,4 +4343,26 @@ Remember to:
 ## 2025-10-02 21:08 -07:00 – Phase 1.2 Long-path runtime (note)
 
 - Status: PASS (see 2025-10-02 20:52 CLI fs:longpath — len=401)
-- App writes indirectly to long paths via StorageManager primary root `D:\\cursor_bots\\HSGalaxy` and fallback `%LOCALAPPDATA%\\HSGalaxy` (logs/calibration). overlay.log creation under primary path confirmed above.
+  - App writes indirectly to long paths via StorageManager primary root `D:\\cursor_bots\\HSGalaxy` and fallback `%LOCALAPPDATA%\\HSGalaxy` (logs/calibration). overlay.log creation under primary path confirmed above.
+
+## 2025-10-03 21:22 -07:00 – Wizard UX polish: Rename/Delete Profile
+
+- Build:
+  - Command: `dotnet build`
+  - Output: Succeeded; 0 Error(s); warnings only (see console).
+
+- New buttons in Wizard (Profile & Actions row):
+  - `Rename…` — prompts for a new profile name and renames the underlying JSON; updates CurrentProfile and refreshes tray/status strip.
+  - `Delete…` — confirm dialog; deletes the profile JSON; clears CurrentProfile if it was the active one.
+
+- Expected overlay.log entries when used:
+  - `Wizard.Rename	<old> -> <new>`
+  - `Wizard.Delete	<fullpath>`
+
+- Manual quick test flow:
+  - Env: `$env:HSGALAXY_DISABLE_OVERLAY=1; $env:HSGALAXY_SHOW_WIZARD=1`
+  - Command: `dotnet run --project src/HSGalaxy.App`
+  - In Wizard: set Profile to a test name (e.g., `wizard_ui_temp`), click `Save`.
+  - Click `Rename…`, enter `wizard_ui_temp_renamed`, confirm overwrite if prompted.
+  - Click `Delete…` to remove the renamed profile.
+  - Check: D:\cursor_bots\HSGalaxy\logs\overlay.log has the entries above; tray Profiles menu auto-refreshes.
