@@ -1,4 +1,4 @@
-ÿþ
+
 
 # Hearthstone Arena Draft Assistant - AI Implementation Checklist
 
@@ -4674,13 +4674,3 @@ Order (best?worst): 122 112 97 61 43
 
 
 
- # #   E n c o d i n g   G u a r d r a i l s   ( D o   N o t   R e m o v e ) 
- -   T h i s   f i l e   i s   e n c o d e d   a s   U T F - 1 6   L E   w i t h   B O M .   K e e p   t h i s   e n c o d i n g   o r   c o n v e r t   o n c e   t o   U T F - 8   e x p l i c i t l y . 
- -   D o   N O T   e d i t   t h i s   f i l e   v i a   t h e   p a t c h   t o o l   ( e x p e c t s   U T F - 8 )      i t   w i l l   f a i l   o r   c o r r u p t   e n c o d i n g . 
- -   I f   k e e p i n g   U T F - 1 6 : 
-     -   R e a d / W r i t e   w i t h   e x p l i c i t   e n c o d i n g   o n l y :   [ S y s t e m . I O . F i l e ] : : R e a d A l l T e x t ( p a t h ,   [ T e x t . E n c o d i n g ] : : U n i c o d e )   a n d   W r i t e A l l T e x t   w i t h   t h e   s a m e . 
-     -   I n   P o w e r S h e l l ,   a v o i d   p i p i n g   t h r o u g h   c o m m a n d s   t h a t   c a n   r e - e n c o d e ;   i f   u s i n g   S e t - C o n t e n t / O u t - F i l e ,   s p e c i f y   - E n c o d i n g   U n i c o d e . 
-     -   A v o i d   s h e l l   r e d i r e c t i o n   t h a t   m a y   d r o p   U T F - 1 6 ;   p r e f e r   i n - m e m o r y   r e a d / m o d i f y / w r i t e . 
- -   I f   c o n v e r t i n g   t o   U T F - 8 : 
-     -   D o   i t   i n   a   d e d i c a t e d   c o m m i t ;   v e r i f y   c o n t e n t   r e n d e r s   c o r r e c t l y ;   t h e n   f u t u r e   e d i t s   m a y   u s e   t h e   p a t c h   t o o l   s a f e l y . 
- -   Q u i c k   c h e c k   a f t e r   s c r i p t e d   e d i t s :   v e r i f y   B O M   a n d   t h a t   A S C I I   c h a r a c t e r s   a p p e a r   a s   a l t e r n a t i n g   n o n - z e r o / z e r o   b y t e s   ( U T F - 1 6 )   o r   p l a i n   s i n g l e   b y t e s   ( U T F - 8 ) . 
