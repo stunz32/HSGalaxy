@@ -1,4 +1,4 @@
-ÿþ
+
 
 # Hearthstone Arena Draft Assistant - AI Implementation Checklist
 
@@ -4673,4 +4673,4 @@ Order (best?worst): 122 112 97 61 43
 
 
 
-
+
