@@ -4476,3 +4476,26 @@ Remember to:
     2025-10-02T21:47:19.7460143-07:00	Wizard.OCR.Run	Source=SimulatedOCR; Lines=5; ElapsedMs=16.0
     2025-10-02T21:47:19.8542458-07:00	Wizard.SelfTest.Capture	C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\wizard_selftest_offline_20251002_214719.png
   - Screenshot: `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\wizard_selftest_offline_20251002_214719.png`
+
+## 2025-10-03 22:35 -07:00 – Additional DPI/light theme proof + long-path recheck
+
+- Status strip (200 DPI, light theme)
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- strip:render 200 light`
+  - Output file: `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi200_light_20251002_214826.png`
+
+- Long-path runtime recheck
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- fs:longpath`
+  - Output: `Wrote: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\longpath_cli\...\test.txt (len=401)`
+
+## 2025-10-03 22:40 -07:00 – Phase Summary (5.4, 4.1, 1.2)
+
+- Phase 5.4 – Wizard Offline/429 + banner: PASS
+  - Log proof: overlay.log Wizard.OCR.Fallback + Wizard.OCR.Run (2025-10-02 21:02/21:04 PDT)
+  - Visual proof: Wizard screenshots saved to %TEMP% (paths above)
+
+- Phase 4.1 – DPI cross-checks: PASS
+  - CLI strip renders at 120, 144, and 200 DPI with dark/safe/light variants
+  - overlay.log shows DPI.Awareness PerMonitor on Wizard open
+
+- Phase 1.2 – Long-path runtime: PASS
+  - CLI fs:longpath len=401; app logs written under primary root and %LOCALAPPDATA%
