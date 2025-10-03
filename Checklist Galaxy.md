@@ -4305,3 +4305,23 @@ Remember to:
   2025-10-02T21:02:54.1947994-07:00	Wizard.OCR.Run	Source=SimulatedOCR; Lines=5; ElapsedMs=16.3
 
 - Visual banner: The Wizard’s `TxtOcrOffline` label displays “Offline Mode” when Azure path fails; visibility set to `Visible` during self-test fallback.
+
+## 2025-10-02 21:04 -07:00 – Phase 5.4 Wizard 429 rate-limit fallback (log proof)
+
+- Env (PowerShell):
+  - `$env:HSGALAXY_AZURE_VISION_ENDPOINT = 'https://example.cognitiveservices.azure.com'`
+  - `$env:HSGALAXY_AZURE_VISION_KEY = 'fakekey'`
+  - `$env:HSGALAXY_OCR_FORCE_429 = '1'`
+  - `$env:HSGALAXY_SHOW_WIZARD = '1'`
+  - `$env:HSGALAXY_WIZARD_SELFTEST = '1'`
+  - `$env:HSGALAXY_EXIT_AFTER_TEST = '1'`
+
+- Command:
+  - `dotnet run --project src/HSGalaxy.App`
+
+- overlay.log (D:\cursor_bots\HSGalaxy\logs\overlay.log excerpt):
+  2025-10-02T21:04:27.0208529-07:00	Wizard.SelfTest	PASS
+  2025-10-02T21:04:27.1335570-07:00	Capture.Frame	240x80 at 50,50
+  2025-10-02T21:04:27.1607793-07:00	Wizard.OCR.Fallback	Forced 429 for test
+  2025-10-02T21:04:27.1656529-07:00	Capture.Frame	240x80 at 50,50
+  2025-10-02T21:04:27.1826096-07:00	Wizard.OCR.Run	Source=SimulatedOCR; Lines=3; ElapsedMs=15.5
