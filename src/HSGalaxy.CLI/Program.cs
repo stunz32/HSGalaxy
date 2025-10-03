@@ -85,7 +85,7 @@ class Program
                 return await BannersRender(args);
         }
 
-        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection\n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])\n  readback:test            GPU->CPU staging readback latency test (100 frames; reports Avg/P95/Max)\n  tiers:score              Score cards with TierScoreEngine (usage: tiers:score <Class> <Card Name> [Card Name] [...])");
+        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection\n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])\n  readback:test            GPU->CPU staging readback latency test (100 frames; reports Avg/P95/Max)\n  tiers:score              Score cards with TierScoreEngine (usage: tiers:score <Class> <Card Name> [Card Name] [...])\n  lanes:render             Render three-lane PNG (usage: lanes:render [Class] [Card1] [Card2] [Card3])\n  chip:render              Render recommendation chip PNG (usage: chip:render [Score] [PrimaryReason...])\n  banners:render           Render status banners PNG");
         return 0;
     }
 
@@ -1397,6 +1397,7 @@ class Program
         using (var bg = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0x11,0x18,0x27)))
         using (var lane = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0x1F,0x2A,0x3D)))
         using (var txt = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0xF9,0xFA,0xFB)))
+        using (var warn = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0xFB,0x72,0x3C)))
         using (var rec = new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(0x22,0xC5,0x3E)))
         using (var pen = new System.Drawing.Pen(rec.Color, 3))
         using (var font = new System.Drawing.Font("Segoe UI", 14, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Pixel))
@@ -1407,6 +1408,7 @@ class Program
             var names = new System.Collections.Generic.List<string>();
             if (args.Length >= 5) { names.Add(args[2]); names.Add(args[3]); names.Add(args[4]); }
             else { names.AddRange(new[]{"Card A","Card B","Card C"}); }
+            var confs = new float[] { 0.92f, 0.78f, 0.61f }; // simulate varied OCR confidence
             int x = pad;
             for (int i=0;i<3;i++)
             {
@@ -1415,9 +1417,11 @@ class Program
                 g.DrawRectangle(System.Drawing.Pens.DarkSlateBlue, r);
                 string title = names[Math.Min(i, names.Count-1)];
                 g.DrawString(title, font, txt, r.X+10, r.Y+10);
-                string conf = "Conf: 0.85";
+                float c = confs[Math.Min(i, confs.Length-1)];
+                string conf = $"Conf: {c:F2}";
                 string cls = "Class: " + playerClass;
-                g.DrawString(conf, fontSmall, txt, r.X+10, r.Y+40);
+                var confBrush = c >= 0.7f ? txt : warn; // warning color on low confidence
+                g.DrawString(conf, fontSmall, confBrush, r.X+10, r.Y+40);
                 g.DrawString(cls, fontSmall, txt, r.X+10, r.Y+60);
                 if (i==0) g.DrawRectangle(pen, r);
                 x += laneW + pad;
