@@ -59,6 +59,8 @@ class Program
                 return await WgcValidate(args);
             if (args[0].Equals("evidence:bundle", StringComparison.OrdinalIgnoreCase))
                 return await EvidenceBundle(args);
+            if (args[0].Equals("evidence:report", StringComparison.OrdinalIgnoreCase))
+                return await EvidenceReport(args);
         }
 
         Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection`n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
@@ -855,6 +857,64 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"evidence:bundle failed: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static async Task<int> EvidenceReport(string[] args)
+    {
+        try
+        {
+            string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HSGalaxy");
+            System.IO.Directory.CreateDirectory(temp);
+            string htmlPath = System.IO.Path.Combine(temp, $"report_evidence_{stamp}.html");
+
+            string primaryLog = System.IO.Path.Combine("D:", "cursor_bots", "HSGalaxy", "logs", "overlay.log");
+            string fallbackLog = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "logs", "overlay.log");
+            string logPath = System.IO.File.Exists(primaryLog) ? primaryLog : (System.IO.File.Exists(fallbackLog) ? fallbackLog : string.Empty);
+            string logTail = string.Empty;
+            if (!string.IsNullOrEmpty(logPath))
+            {
+                var all = await System.IO.File.ReadAllLinesAsync(logPath);
+                int take = Math.Min(120, all.Length);
+                logTail = string.Join("\n", all[^take..]);
+            }
+
+            string[] wizardShots = System.IO.Directory.Exists(temp) ? System.IO.Directory.GetFiles(temp, "wizard_selftest_*.png").OrderByDescending(System.IO.File.GetLastWriteTimeUtc).ToArray() : Array.Empty<string>();
+            string[] strips = System.IO.Directory.Exists(temp) ? System.IO.Directory.GetFiles(temp, "strip_*.png").OrderByDescending(System.IO.File.GetLastWriteTimeUtc).ToArray() : Array.Empty<string>();
+            string exportDir = System.IO.Path.Combine(temp, "exports_all3");
+            string[] exports = System.IO.Directory.Exists(exportDir) ? System.IO.Directory.GetFiles(exportDir, "*.json").OrderBy(System.IO.Path.GetFileName).ToArray() : Array.Empty<string>();
+
+            string ToUri(string p) => new Uri(p).AbsoluteUri;
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("<html><head><meta charset='utf-8'><title>HSGalaxy Evidence Report</title><style>body{font-family:Segoe UI,SegoeUI,Arial,sans-serif;margin:24px;}h2{margin-top:28px;} pre{background:#0b0f17;color:#f9fafb;padding:12px;border-radius:6px;overflow:auto;} img{max-width:100%;border:1px solid #ddd;margin:8px 0;} ul{margin:8px 0 16px 24px;}</style></head><body>");
+            sb.AppendLine($"<h1>HSGalaxy Evidence Report</h1><p>Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss zzz}</p>");
+
+            sb.AppendLine("<h2>Overlay Log (tail)</h2>");
+            if (!string.IsNullOrEmpty(logTail)) sb.AppendLine("<pre>" + System.Net.WebUtility.HtmlEncode(logTail) + "</pre>"); else sb.AppendLine("<p><i>No overlay.log found.</i></p>");
+
+            sb.AppendLine("<h2>Wizard Screenshots</h2>");
+            if (wizardShots.Length == 0) sb.AppendLine("<p><i>No wizard_selftest_*.png found in %TEMP%\\HSGalaxy.</i></p>");
+            foreach (var p in wizardShots.Take(10)) sb.AppendLine($"<div><div>{System.Net.WebUtility.HtmlEncode(p)}</div><img src='{ToUri(p)}' /></div>");
+
+            sb.AppendLine("<h2>Status Strip Renders</h2>");
+            if (strips.Length == 0) sb.AppendLine("<p><i>No strip_*.png found in %TEMP%\\HSGalaxy.</i></p>");
+            foreach (var p in strips.Take(10)) sb.AppendLine($"<div><div>{System.Net.WebUtility.HtmlEncode(p)}</div><img src='{ToUri(p)}' /></div>");
+
+            sb.AppendLine("<h2>Exported Profiles</h2><ul>");
+            foreach (var p in exports) sb.AppendLine($"<li>{System.Net.WebUtility.HtmlEncode(p)}</li>");
+            sb.AppendLine("</ul>");
+
+            sb.AppendLine("</body></html>");
+            await System.IO.File.WriteAllTextAsync(htmlPath, sb.ToString(), System.Text.Encoding.UTF8);
+            Console.WriteLine($"Evidence report: {htmlPath}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"evidence:report failed: {ex.Message}");
             return 1;
         }
     }

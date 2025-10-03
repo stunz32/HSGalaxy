@@ -4552,3 +4552,9 @@ Remember to:
   - Wizard screenshots (wizard_selftest_*.png)
   - Status strips (strip_*.png)
   - Latest exported profiles (exports_all3/*.json)
+
+## 2025-10-03 23:05 -07:00 – Evidence HTML report
+
+- Command: `dotnet run --project src/HSGalaxy.CLI -- evidence:report`
+- Output: `Evidence report: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\report_evidence_20251002_215504.html`
+- Includes overlay.log tail, embedded Wizard screenshots and status strip images, and exported profile list.
