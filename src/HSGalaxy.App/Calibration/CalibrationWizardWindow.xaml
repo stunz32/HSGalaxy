@@ -45,6 +45,8 @@
                         <Button Content="Load" Margin="6,0,0,0" Click="BtnLoad_Click"/>
                         <Button Content="Reattach" Margin="6,0,0,0" Click="BtnReattach_Click"/>
                         <Button Content="Save" Margin="6,0,0,0" Click="BtnSave_Click"/>
+                        <Button Content="Rename…" Margin="6,0,0,0" Click="BtnRename_Click"/>
+                        <Button Content="Delete…" Margin="6,0,0,0" Click="BtnDeleteProfile_Click"/>
                         <Button Content="Export Profile…" Margin="6,0,0,0" Click="BtnExport_Click"/>
                         <Button Content="Import Profile…" Margin="6,0,0,0" Click="BtnImport_Click"/>
                         <Button Content="Export All…" Margin="6,0,0,0" Click="BtnExportAll_Click"/>

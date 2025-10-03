@@ -11,6 +11,7 @@ using HSGalaxy.Core.Config;
 using HSGalaxy.UI.Capture;
 using HSGalaxy.Core.OCR;
 using HSGalaxy.Diagnostics;
+using Microsoft.VisualBasic;
 
 namespace HSGalaxy.App.Calibration;
 
@@ -216,6 +217,63 @@ public partial class CalibrationWizardWindow : Window
         _overlay.ClearRois();
         SetStatus("ROIs cleared.");
         RefreshRoiList();
+    }
+
+    private async void BtnRename_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string folder = GetCalibrationFolder();
+            string currentName = (await LoadCurrentProfileNameAsync()) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(currentName)) currentName = TxtProfile.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(currentName)) { SetStatus("Enter current profile name in the Profile box first."); return; }
+
+            string defaultNew = currentName + "_renamed";
+            string newName = Interaction.InputBox($"Rename '{currentName}' to:", "Rename Profile", defaultNew).Trim();
+            if (string.IsNullOrWhiteSpace(newName) || string.Equals(newName, currentName, StringComparison.OrdinalIgnoreCase)) { SetStatus("Rename cancelled."); return; }
+
+            string oldPath = System.IO.Path.Combine(folder, currentName + ".json");
+            if (!File.Exists(oldPath)) { SetStatus($"Profile '{currentName}' not found in {folder}"); return; }
+
+            string newPath = System.IO.Path.Combine(folder, newName + ".json");
+            if (File.Exists(newPath))
+            {
+                var overwrite = System.Windows.MessageBox.Show($"'{newName}' exists. Overwrite?", "Confirm Overwrite", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (overwrite != MessageBoxResult.Yes) { SetStatus("Rename cancelled."); return; }
+            }
+
+            var json = await File.ReadAllTextAsync(oldPath, System.Text.Encoding.UTF8);
+            var prof = Newtonsoft.Json.JsonConvert.DeserializeObject<CalibrationProfile>(json) ?? new CalibrationProfile();
+            prof.Name = newName;
+            await CalibrationManager.SaveAsync(prof, folder);
+            try { File.Delete(oldPath); } catch { }
+
+            await SaveCurrentProfileNameAsync(newName);
+            TxtProfile.Text = newName;
+            SetStatus($"Renamed '{currentName}' -> '{newName}'.");
+            try { OverlayLogger.Log("Wizard.Rename", $"{currentName} -> {newName}"); } catch { }
+        }
+        catch (Exception ex) { SetStatus($"Rename failed: {ex.Message}"); }
+    }
+
+    private async void BtnDeleteProfile_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string name = string.IsNullOrWhiteSpace(TxtProfile.Text) ? "" : TxtProfile.Text.Trim();
+            if (string.IsNullOrWhiteSpace(name)) { SetStatus("Enter a profile name to delete."); return; }
+            var confirm = System.Windows.MessageBox.Show($"Delete profile '{name}'? This cannot be undone.", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes) { SetStatus("Delete cancelled."); return; }
+            string folder = GetCalibrationFolder();
+            string path = System.IO.Path.Combine(folder, name + ".json");
+            if (!File.Exists(path)) { SetStatus($"Profile '{name}' not found in {folder}"); return; }
+            File.Delete(path);
+            await ClearCurrentProfileIfMatchesAsync(name);
+            TxtProfile.Text = string.Empty;
+            SetStatus($"Deleted profile: {path}");
+            try { OverlayLogger.Log("Wizard.Delete", path); } catch { }
+        }
+        catch (Exception ex) { SetStatus($"Delete failed: {ex.Message}"); }
     }
 
     private async void BtnReattach_Click(object sender, RoutedEventArgs e)
@@ -525,6 +583,38 @@ public partial class CalibrationWizardWindow : Window
         var env = Environment.GetEnvironmentVariable("HSGALAXY_CALIB_DIR");
         if (!string.IsNullOrWhiteSpace(env)) return env!;
         return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "calibration");
+    }
+
+    private static async Task<string?> LoadCurrentProfileNameAsync()
+    {
+        try
+        {
+            var cfgFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "config");
+            Directory.CreateDirectory(cfgFolder);
+            var cfgPath = Path.Combine(cfgFolder, "appsettings.json");
+            var store = new JsonConfigStore<AppSettings>(cfgPath);
+            var settings = await store.LoadAsync();
+            return settings.CurrentProfile;
+        }
+        catch { return null; }
+    }
+
+    private static async Task ClearCurrentProfileIfMatchesAsync(string name)
+    {
+        try
+        {
+            var cfgFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "config");
+            Directory.CreateDirectory(cfgFolder);
+            var cfgPath = Path.Combine(cfgFolder, "appsettings.json");
+            var store = new JsonConfigStore<AppSettings>(cfgPath);
+            var settings = await store.LoadAsync();
+            if (string.Equals(settings.CurrentProfile, name, StringComparison.OrdinalIgnoreCase))
+            {
+                settings.CurrentProfile = string.Empty;
+                await store.SaveAsync(settings);
+            }
+        }
+        catch { }
     }
 
     private static async Task SaveCurrentProfileNameAsync(string name)
