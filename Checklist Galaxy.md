@@ -4366,3 +4366,39 @@ Remember to:
   - Click `Rename…`, enter `wizard_ui_temp_renamed`, confirm overwrite if prompted.
   - Click `Delete…` to remove the renamed profile.
   - Check: D:\cursor_bots\HSGalaxy\logs\overlay.log has the entries above; tray Profiles menu auto-refreshes.
+
+## 2025-10-03 21:42 -07:00 – Additional end-to-end validations
+
+- WGC validate (Notepad lifecycle)
+  - Command:
+    - `start notepad`
+    - `dotnet run --project src/HSGalaxy.CLI -- wgc:validate notepad --close`
+  - Result: PASS (see console; Notepad auto-closed). No errors.
+
+- Storage validation (primary + probe)
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- storage:validate`
+  - Output:
+    Storage Root: D:\\cursor_bots\\HSGalaxy
+    Using Fallback: False
+    Test files:
+    - D:\cursor_bots\HSGalaxy\config\config_test.txt
+    - D:\cursor_bots\HSGalaxy\calibration\calib_test.txt
+    - D:\cursor_bots\HSGalaxy\dict\dict_test.txt
+    - D:\cursor_bots\HSGalaxy\tiers\tiers_test.txt
+    - D:\cursor_bots\HSGalaxy\logs\logs_test.txt
+    - D:\cursor_bots\HSGalaxy\dumps\dumps_test.txt
+    - D:\cursor_bots\HSGalaxy\backups\backups_test.txt
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- storage:primary-probe`
+  - Output:
+    Storage Root: D:\\cursor_bots\\HSGalaxy
+    Using Fallback: False
+
+- Quick profile create + capture (Notepad window)
+  - Command sequence:
+    - `start notepad`
+    - `dotnet run --project src/HSGalaxy.CLI -- calib:mkprofile-window notepad np_profile_ui`
+    - `dotnet run --project src/HSGalaxy.CLI -- calib:capture-profile np_profile_ui`
+  - Output:
+    Profile 'np_profile_ui' saved: C:\Users\Marcco\AppData\Local\HSGalaxy\calibration\np_profile_ui.json
+    Reattached to window 'Untitled - Notepad' with offset (0,0).
+    Composite saved to: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\profile_np_profile_ui_20251002_214213.png
