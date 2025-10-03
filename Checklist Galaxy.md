@@ -4608,3 +4608,26 @@ Remember to:
   - `App ZIP:   C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_220212\HSGalaxy.App_Release_win-x64_sc.zip  (78.36 MB)`
   - `CLI ZIP:   C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_220212\HSGalaxy.CLI_Release_win-x64_sc.zip  (43.83 MB)`
   - `DIST ROOT: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_220212`
+
+## 2025-10-03 23:38 -07:00 – Wizard “Copy Text Only” proof
+
+- Env:
+  - `$env:HSGALAXY_AZURE_VISION_ENDPOINT='https://example.cognitiveservices.azure.com'`
+  - `$env:HSGALAXY_AZURE_VISION_KEY='fakekey'`
+  - `$env:HSGALAXY_OCR_FORCE_OFFLINE='1'`
+  - `$env:HSGALAXY_SHOW_WIZARD='1'`
+  - `$env:HSGALAXY_WIZARD_SELFTEST='1'`
+  - `$env:HSGALAXY_WIZARD_SELFTEST_COPY='1'`
+  - `$env:HSGALAXY_EXIT_AFTER_TEST='1'`
+
+- Command: `dotnet run --project src/HSGalaxy.App`
+
+- overlay.log excerpt (D:\\cursor_bots\\HSGalaxy\\logs\\overlay.log):
+  2025-10-02T22:05:02.4249532-07:00	Wizard.OCR.Fallback	Forced offline for test
+  2025-10-02T22:05:02.4481315-07:00	Wizard.OCR.Run	Source=SimulatedOCR; Lines=5; ElapsedMs=16.8
+  2025-10-02T22:05:02.4768936-07:00	Wizard.OCR.CopyTextOnly	Items=1
+
+## 2025-10-03 23:45 -07:00 – CI pipeline
+
+- Added GitHub Actions workflow at `.github/workflows/ci.yml`.
+- Builds, tests, and publishes App/CLI (win-x64), and uploads artifacts on push/PR.

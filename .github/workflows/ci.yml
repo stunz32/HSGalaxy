@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [ "feat/vortice-dcomp", "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore
+        run: dotnet restore
+      - name: Build
+        run: dotnet build -c Release --no-restore
+      - name: Test
+        run: dotnet test -c Release --no-build -v minimal
+      - name: Publish App (win-x64)
+        run: dotnet publish src/HSGalaxy.App -c Release -r win-x64 --no-self-contained -o out/app
+      - name: Publish CLI (win-x64)
+        run: dotnet publish src/HSGalaxy.CLI -c Release -r win-x64 --no-self-contained -o out/cli
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hs-galaxy-artifacts
+          path: |
+            out/app
+            out/cli
