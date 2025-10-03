@@ -4558,3 +4558,28 @@ Remember to:
 - Command: `dotnet run --project src/HSGalaxy.CLI -- evidence:report`
 - Output: `Evidence report: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\report_evidence_20251002_215504.html`
 - Includes overlay.log tail, embedded Wizard screenshots and status strip images, and exported profile list.
+
+## 2025-10-03 23:12 -07:00 – Documentation updates
+
+- CHANGELOG.md created; summarizes feat/vortice-dcomp deliverables for 2025-10-03.
+- README.md updated with:
+  - Quick start + Wizard env flags
+  - OCR env vars and test flags
+  - CLI command reference (including evidence:bundle/report)
+  - Log paths and self-test automation
+
+- CLI help snapshot
+  - Command: `dotnet run --project src/HSGalaxy.CLI --`
+  - Output (header):
+    HSGalaxy CLI
+    Commands:
+      net:test
+      ocr:test
+      ocr:azure
+      ocr:azure32
+      calib:test/capture/capture-profile/list/export/export-all/import/rename/delete/mkprofile-window
+      storage:validate/primary-probe
+      fs:longpath
+      strip:render
+      wgc:fps/window/validate
+      evidence:bundle/evidence:report
