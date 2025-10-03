@@ -967,6 +967,13 @@ Key files:
 - [ ] Fallback triggers on v4 timeout (Note: current selector chooses v4 if available; runtime failover to v3.2 not wired yet)
 - [ ] **STOP if any validation fails**
 
+Status (2025-10-03):
+- Azure v4 reachable but returning 401 (PermissionDenied) with current credentials; v3.2 likely same until key/permissions are corrected.
+- Commands attempted:
+  - `dotnet run -c Release --project src/HSGalaxy.CLI -- ocr:azure` → 401 PermissionDenied
+  - `dotnet run -c Release --project src/HSGalaxy.CLI -- ocr:azure32` → TBD (expected same until key is corrected)
+  - Once credentials are valid, run Gate 5.3 harness to complete.
+
 ### Task 5.4: Local OCR Fallback
 
 #### Subtasks:
@@ -1011,8 +1018,12 @@ Key files:
 - [x] Local OCR fallback engages when no Azure env vars are set — 2025-09-30 18:59 PDT
   - Command: `dotnet run --project src/HSGalaxy.CLI -- ocr:test`
   - Output: `OCR Client: SimulatedOCR, Elapsed: 134.0 ms, Lines: 4`
-- [ ] Simulate network offline - local OCR engages (covered by above; explicit offline sim TBD)
-- [ ] Simulate 429 responses - local OCR engages (unit/integration TBD)
+- [x] Simulate network offline - local OCR engages — 2025-10-03
+  - Command: `set HSGALAXY_OCR_FORCE_OFFLINE=1 && dotnet run -c Release --project src/HSGalaxy.CLI -- ocr:test`
+  - Output: `Primary OCR client failed: Forced offline for test. Falling back to Simulated.`
+- [x] Simulate 429 responses - local OCR engages — 2025-10-03
+  - Command: `set HSGALAXY_OCR_FORCE_429=1 && dotnet run -c Release --project src/HSGalaxy.CLI -- ocr:test`
+  - Output: `Primary OCR client failed: Forced 429 for test. Falling back to Simulated.`
 - [ ] "Offline Mode" banner appears
 - [ ] Accuracy within 10% of cloud OCR
 - [ ] **STOP if any validation fails**
