@@ -4499,3 +4499,23 @@ Remember to:
 
 - Phase 1.2 – Long-path runtime: PASS
   - CLI fs:longpath len=401; app logs written under primary root and %LOCALAPPDATA%
+
+## 2025-10-03 22:48 -07:00 – Profiles list + export-all snapshot
+
+- List profiles
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:list`
+  - Output (current):
+    Profiles in C:\Users\Marcco\AppData\Local\HSGalaxy\calibration:
+    - np_profile_ui  (updated 2025-10-02 21:42)
+    - wizard_ui_temp  (updated 2025-10-02 21:19)
+    - np_profile  (updated 2025-09-30 19:03)
+    - watchtest1  (updated 2025-09-30 18:47)
+    - wizard1_copy2  (updated 2025-09-30 18:45)
+    - wizard1_copy_renamed  (updated 2025-09-30 18:41)
+    - SelfTest  (updated 2025-09-29 20:34)
+    - wizard1  (updated 2025-09-29 20:06)
+
+- Export all
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:export-all %TEMP%\HSGalaxy\exports_all3`
+  - Output (summary):
+    Total exported: 8
