@@ -60,7 +60,9 @@ namespace HSGalaxy.Core.Data
                         Collectible = c.Collectible ?? false,
                         Set = c.Set ?? string.Empty,
                         Rarity = c.Rarity ?? string.Empty,
-                        Type = c.Type ?? string.Empty
+                        Type = c.Type ?? string.Empty,
+                        Race = (c.Race ?? c.MinionType ?? string.Empty).ToUpperInvariant(),
+                        Text = c.Text ?? string.Empty
                     });
                 }
                 return db;
@@ -77,6 +79,8 @@ namespace HSGalaxy.Core.Data
             public string Set { get; set; } = string.Empty;
             public string Rarity { get; set; } = string.Empty;
             public string Type { get; set; } = string.Empty;
+            public string Race { get; set; } = string.Empty; // MURLOC, MECHANICAL, etc.
+            public string Text { get; set; } = string.Empty;
 
             public bool IsArenaEligible()
             {
@@ -99,6 +103,9 @@ namespace HSGalaxy.Core.Data
             [JsonPropertyName("set")] public string? Set { get; set; }
             [JsonPropertyName("rarity")] public string? Rarity { get; set; }
             [JsonPropertyName("type")] public string? Type { get; set; }
+            [JsonPropertyName("race")] public string? Race { get; set; }
+            [JsonPropertyName("minionType")] public string? MinionType { get; set; }
+            [JsonPropertyName("text")] public string? Text { get; set; }
         }
     }
 }

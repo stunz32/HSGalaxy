@@ -1250,7 +1250,7 @@ Status (2025-10-03):
       public Dictionary<string, float> ClassModifiers { get; set; }
   }
   ```
-- [ ] Implement synergy detection:
+- [x] Implement synergy detection:
   ```csharp
   /// <summary>
   /// Detects synergies between cards
@@ -1278,7 +1278,7 @@ Status (2025-10-03):
       return Math.Min(bonus, 15.0f);  // Cap at 15
   }
   ```
-- [ ] Implement curve analysis:
+- [x] Implement curve analysis:
   ```csharp
   /// <summary>
   /// Evaluates mana curve balance
@@ -1304,17 +1304,17 @@ Status (2025-10-03):
   ```
 
 #### Validation Gate 7.1:
-- [ ] Score 30 test cards with known tiers
-- [ ] Verify scores match expected ranges
-- [ ] Test synergy detection with tribal deck
-- [ ] Test curve penalties with skewed deck
-- [ ] Rationale strings are clear and accurate
+- [x] Score 30 test cards with known tiers — PASS (TierList defaults/simple)
+- [x] Verify scores match expected ranges — PASS (0–100 clamp; base±synergy±curve)
+- [x] Test synergy detection with tribal deck — PASS (Murloc synergy)
+- [x] Test curve penalties with skewed deck — PASS
+- [x] Rationale strings are clear and accurate — PASS
 - [ ] **STOP if any validation fails**
 
 ### Task 7.2: Deck Ledger System
 
 #### Subtasks:
-- [ ] Create `DeckLedger.cs`:
+- [x] Create `DeckLedger.cs` (src/HSGalaxy.Core/Recommend/DeckLedger.cs):
   ```csharp
   /// <summary>
   /// Source of truth for picked cards
@@ -1342,7 +1342,7 @@ Status (2025-10-03):
       public void RecordPick(Card selected, Card[] options)
   }
   ```
-- [ ] Implement deck panel reconciliation:
+- [x] Implement deck panel reconciliation:
   ```csharp
   /// <summary>
   /// Compares ledger with deck panel OCR
@@ -4663,6 +4663,7 @@ Order (best?worst): 122 112 97 61 43
 - Dist root: \Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_220212`
 - Evidence ZIP present: 
 - Evidence HTML present: 
+
 
 
 
