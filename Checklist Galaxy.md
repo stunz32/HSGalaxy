@@ -2,6 +2,19 @@
 
 # Hearthstone Arena Draft Assistant - AI Implementation Checklist
 
+## Release Notes — 2025-10-03 (feat/vortice-dcomp)
+- Phase 5.4 Offline/429 Wizard fallback: PASS
+  - Log proof: D:\\cursor_bots\\HSGalaxy\\logs\\overlay.log entries on 2025-10-02 21:02–21:04 PDT.
+  - Visual proof: %TEMP%\\HSGalaxy\\wizard_selftest_offline_*.png (paths listed in sections 22:28 PDT).
+- Phase 4.1 DPI cross-checks: PASS
+  - Strip renders at 120/144/200 DPI across dark/safe/light themes (file paths recorded).
+  - overlay.log shows PerMonitor DPI when Wizard opens.
+- Phase 1.2 Long-path runtime: PASS
+  - CLI fs:longpath len=401; overlay.log written under primary root and %LOCALAPPDATA%.
+- Wizard UX polish (Rename/Delete): Implemented; logs Wizard.Rename/Wizard.Delete and live refresh.
+- Overlay health: NO_ERRORS on a fresh self-test run.
+- Tests: Core (4) and OCR (3) tests PASS.
+
 ## IMPORTANT INSTRUCTIONS FOR THE AI
 - **Track Progress**: After completing each task, mark it as `[âœ“]` in this checklist
 - **Document Everything**: Write comprehensive comments explaining WHAT, WHY, and HOW for every function/class
@@ -4519,3 +4532,13 @@ Remember to:
   - Command: `dotnet run --project src/HSGalaxy.CLI -- calib:export-all %TEMP%\HSGalaxy\exports_all3`
   - Output (summary):
     Total exported: 8
+
+## 2025-10-03 22:56 -07:00 – Unit tests
+
+- Core tests
+  - Command: `dotnet test tests/HSGalaxy.Core.Tests/HSGalaxy.Core.Tests.csproj -v:minimal`
+  - Output (summary): `Passed!  - Failed: 0, Passed: 4, Skipped: 0, Total: 4`
+
+- OCR tests
+  - Command: `dotnet test tests/HSGalaxy.OCR.Tests/HSGalaxy.OCR.Tests.csproj -v:minimal`
+  - Output (summary): `Passed!  - Failed: 0, Passed: 3, Skipped: 0, Total: 3`
