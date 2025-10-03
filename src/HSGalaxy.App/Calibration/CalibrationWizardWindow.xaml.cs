@@ -16,6 +16,7 @@ namespace HSGalaxy.App.Calibration;
 
 public partial class CalibrationWizardWindow : Window
 {
+    public static CalibrationWizardWindow? Current { get; private set; }
     private readonly WindowPicker _picker = new WindowPicker();
     private HSGalaxy.UI.Capture.WindowPicker.WindowInfo? _selected;
     private RoiEditorOverlayWindow? _overlay;
@@ -25,7 +26,65 @@ public partial class CalibrationWizardWindow : Window
     public CalibrationWizardWindow()
     {
         InitializeComponent();
+        Current = this;
         LoadWindows();
+    }
+
+    public async System.Threading.Tasks.Task RunOcrSelfTestAsync()
+    {
+        try
+        {
+            // Minimal, non-interactive OCR pass for CI/self-test.
+            var rois = new System.Collections.Generic.List<Roi>
+            {
+                new Roi { Id = "self", X = 50, Y = 50, Width = 240, Height = 80 }
+            };
+            var profile = new CalibrationProfile { Name = "SelfTest" };
+            profile.Regions.AddRange(rois);
+            var client = OcrClientSelector.Create();
+            var pipeline = new OcrPipeline(client);
+            using var cap = new HSGalaxy.UI.Capture.CaptureManager();
+            HSGalaxy.Core.OCR.OcrResult result;
+            bool offline = false;
+            try
+            {
+                result = await pipeline.RunOnceAsync(profile, r => cap.Capture(new System.Drawing.Rectangle(r.X, r.Y, r.Width, r.Height)));
+            }
+            catch (Exception ex)
+            {
+                offline = true;
+                try { OverlayLogger.Log("Wizard.OCR.Fallback", ex.Message); } catch { }
+                var sim = new HSGalaxy.Core.OCR.SimulatedOcrClient();
+                result = await new HSGalaxy.Core.OCR.OcrPipeline(sim).RunOnceAsync(profile, r => cap.Capture(new System.Drawing.Rectangle(r.X, r.Y, r.Width, r.Height)));
+            }
+
+            var list = new System.Collections.ObjectModel.ObservableCollection<OcrRow>();
+            for (int i = 0; i < rois.Count; i++)
+            {
+                string id = rois[i].Id ?? i.ToString();
+                var lines = result.Lines.FindAll(l => l.RoiIndex == i);
+                if (lines.Count == 0)
+                {
+                    list.Add(new OcrRow(id, 0.0, "0.00", ""));
+                }
+                else
+                {
+                    float avg = 0f; foreach (var ln in lines) avg += ln.Confidence; avg /= lines.Count;
+                    string text = string.Join(" ", lines.ConvertAll(l => l.Text));
+                    list.Add(new OcrRow(id, avg, avg.ToString("F2"), text));
+                }
+            }
+            _ocrAll = list;
+            ApplyOcrFilters();
+            TxtOcrMeta.Text = $"Source:{result.Source}{(offline || !result.Source.StartsWith("Azure", StringComparison.OrdinalIgnoreCase) ? " (fallback)" : string.Empty)}  Elapsed:{result.ElapsedMs:F1}ms  Lines:{result.Lines.Count}";
+            TxtOcrOffline.Visibility = (offline || !result.Source.StartsWith("Azure", StringComparison.OrdinalIgnoreCase)) ? Visibility.Visible : Visibility.Collapsed;
+            SetStatus("OCR self-test complete.");
+            try { OverlayLogger.Log("Wizard.OCR.Run", $"Source={result.Source}; Lines={result.Lines.Count}; ElapsedMs={result.ElapsedMs:F1}"); } catch { }
+        }
+        catch (Exception ex)
+        {
+            try { OverlayLogger.Log("Wizard.OCR.SelfTest.Error", ex.Message); } catch { }
+        }
     }
 
     private void LoadWindows(string? filter = null)

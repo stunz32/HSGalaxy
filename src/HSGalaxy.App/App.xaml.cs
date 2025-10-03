@@ -296,7 +296,7 @@ public partial class App : System.Windows.Application
             var selftest = Environment.GetEnvironmentVariable("HSGALAXY_WIZARD_SELFTEST");
             if (!string.Equals(selftest, "1", StringComparison.OrdinalIgnoreCase)) return;
             var t = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(1200) };
-            t.Tick += (_, __) =>
+            t.Tick += async (_, __) =>
             {
                 t.Stop();
                 bool found = false;
@@ -316,6 +316,15 @@ public partial class App : System.Windows.Application
                     OverlayLogger.Log("Wizard.SelfTest.Error", ex.Message);
                 }
                 OverlayLogger.Log("Wizard.SelfTest", found ? "PASS" : "FAIL");
+                try
+                {
+                    // If the wizard is open, trigger a non-interactive OCR self-test.
+                    await Calibration.CalibrationWizardWindow.Current?.RunOcrSelfTestAsync();
+                }
+                catch (System.Exception ex)
+                {
+                    OverlayLogger.Log("Wizard.SelfTest.RunOcr.Error", ex.Message);
+                }
                 var autoExit = Environment.GetEnvironmentVariable("HSGALAXY_EXIT_AFTER_TEST");
                 if (string.Equals(autoExit, "1", StringComparison.OrdinalIgnoreCase))
                 {
