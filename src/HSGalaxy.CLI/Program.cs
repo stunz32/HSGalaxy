@@ -73,6 +73,8 @@ class Program
                 return await ResolveTest(args);
             if (args[0].Equals("ocr:gate5_2", StringComparison.OrdinalIgnoreCase))
                 return await OcrGate52();
+            if (args[0].Equals("resolve:gate6_3", StringComparison.OrdinalIgnoreCase))
+                return await ResolveGate63();
         }
 
         Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection`n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])\n  readback:test            GPU->CPU staging readback latency test (100 frames; reports Avg/P95/Max)");
@@ -1229,4 +1231,111 @@ class Program
             return Task.FromResult(1);
         }
     }
+
+    private static Task<int> ResolveGate63()
+    {
+        try
+        {
+            var mgr = new HSGalaxy.Core.Data.HearthstoneDataManager();
+            HSGalaxy.Core.Data.HearthstoneDataManager.CardDatabase db;
+            try { mgr.InitializeAsync().GetAwaiter().GetResult(); db = mgr.Database; }
+            catch
+            {
+                string cacheRoot = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "cache", "hearthstone");
+                string cacheFile = System.IO.Path.Combine(cacheRoot, "cards_enUS_latest.json");
+                if (!System.IO.File.Exists(cacheFile)) throw new Exception("Cache not found; run data:init first");
+                var raw = System.IO.File.ReadAllText(cacheFile, System.Text.Encoding.UTF8);
+                var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var cards = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<HSGalaxy.Core.Data.HearthstoneDataManager.HsJsonCard>>(raw, opts) ?? new System.Collections.Generic.List<HSGalaxy.Core.Data.HearthstoneDataManager.HsJsonCard>();
+                db = HSGalaxy.Core.Data.HearthstoneDataManager.CardDatabase.FromHsJson(cards);
+            }
+
+            // Eligible pool
+            var pool = db.Cards.Where(c => c.IsArenaEligible() && !string.IsNullOrWhiteSpace(c.Name) && c.Name.Length >= 5 && c.Name.Length <= 18).ToList();
+            if (pool.Count < 2000) Console.WriteLine($"Warning: small pool {pool.Count}");
+            var rnd = new Random(12345);
+            var sample = pool.OrderBy(_ => rnd.Next()).Take(50).ToList();
+
+            var resolver = new HSGalaxy.Core.Resolve.CardResolver(db);
+            int exactPass = 0;
+            foreach (var card in sample)
+            {
+                var res = resolver.Resolve(card.Name, 1.00f, card.PlayerClass);
+                if (string.Equals(res.CardName, card.Name, StringComparison.OrdinalIgnoreCase)) exactPass++;
+            }
+            Console.WriteLine($"Exact 50: {exactPass}/50 correct");
+
+            int ocrPass = 0;
+            foreach (var card in sample)
+            {
+                string typo = MakeTypo(card.Name, rnd);
+                var res = resolver.Resolve(typo, 0.85f, card.PlayerClass);
+                if (string.Equals(res.CardName, card.Name, StringComparison.OrdinalIgnoreCase)) ocrPass++;
+            }
+            Console.WriteLine($"OCR typos 50: {ocrPass}/50 corrected");
+
+            // Ambiguity check: generate some short stems likely to collide
+            bool ambiguousFound = false;
+            foreach (var card in sample)
+            {
+                string stem = card.Name.Length > 6 ? card.Name.Substring(0, 4) : card.Name;
+                var ranked = db.Cards.Select(c => new { c, d = EditDistance(stem, c.Name) }).OrderBy(x => x.d).Take(2).ToList();
+                if (ranked.Count == 2 && (ranked[1].d - ranked[0].d) <= 1 && !string.Equals(ranked[0].c.Name, ranked[1].c.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    ambiguousFound = true; break;
+                }
+            }
+            Console.WriteLine($"Ambiguity detected: {(ambiguousFound ? "YES" : "NO")}");
+
+            bool passExact = exactPass == 50;
+            bool passOcr = ocrPass >= 45; // >90%
+            bool passAmb = ambiguousFound;
+            Console.WriteLine(passExact && passOcr && passAmb ? "Gate 6.3: PASS" : "Gate 6.3: FAIL");
+            return Task.FromResult(passExact && passOcr && passAmb ? 0 : 1);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"resolve:gate6_3 failed: {ex.Message}");
+            return Task.FromResult(1);
+        }
+    }
+
+    private static int EditDistance(string a, string b)
+    {
+        a = a ?? string.Empty; b = b ?? string.Empty;
+        int n = a.Length, m = b.Length;
+        var dp = new int[n + 1, m + 1];
+        for (int i = 0; i <= n; i++) dp[i, 0] = i;
+        for (int j = 0; j <= m; j++) dp[0, j] = j;
+        for (int i = 1; i <= n; i++)
+            for (int j = 1; j <= m; j++)
+            {
+                int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                dp[i, j] = Math.Min(Math.Min(dp[i - 1, j] + 1, dp[i, j - 1] + 1), dp[i - 1, j - 1] + cost);
+            }
+        return dp[n, m];
+    }
+
+    private static string MakeTypo(string s, Random rnd)
+    {
+        if (string.IsNullOrWhiteSpace(s) || s.Length < 3) return s;
+        int mode = rnd.Next(3);
+        switch (mode)
+        {
+            case 0: // deletion
+                int i = rnd.Next(0, s.Length);
+                return s.Remove(i, 1);
+            case 1: // insertion
+                char ch = (char)('a' + rnd.Next(26));
+                int j = rnd.Next(0, s.Length);
+                return s.Insert(j, ch.ToString());
+            default: // substitution
+                int k = rnd.Next(0, s.Length);
+                char ch2 = (char)('a' + rnd.Next(26));
+                var arr = s.ToCharArray();
+                arr[k] = ch2; return new string(arr);
+        }
+    }
+
 }
+

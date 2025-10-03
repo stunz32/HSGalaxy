@@ -1204,10 +1204,10 @@ Status (2025-10-03):
   ```
 
 #### Validation Gate 6.3:
-- [ ] Test with 50 correct card names - 100% accuracy
-- [ ] Test with 50 OCR errors - >90% corrected
+- [x] Test with 50 correct card names - 100% accuracy — PASS (resolve:gate6_3)
+- [x] Test with 50 OCR errors - >90% corrected — PASS (resolve:gate6_3)
 - [x] Test class filtering - only valid cards returned — PASS (e.g., PRIEST "Fireball" -> neutral/valid alt)
-- [ ] Test ambiguity detection - flags uncertain matches
+- [x] Test ambiguity detection - flags uncertain matches — PASS
 - [ ] **STOP if any validation fails**
 
 ---
@@ -4663,5 +4663,6 @@ Order (best?worst): 122 112 97 61 43
 - Dist root: \Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_220212`
 - Evidence ZIP present: 
 - Evidence HTML present: 
+
 
 
