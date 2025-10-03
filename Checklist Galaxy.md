@@ -1217,7 +1217,7 @@ Status (2025-10-03):
 ### Task 7.1: Tier Score Engine
 
 #### Subtasks:
-- [ ] Create `TierScoreEngine.cs`:
+- [x] Create `TierScoreEngine.cs` (src/HSGalaxy.Core/Recommend/TierScoreEngine.cs):
   ```csharp
   /// <summary>
   /// Calculates tier scores for cards
@@ -1375,7 +1375,11 @@ Status (2025-10-03):
 ---
 
 ## PHASE 8: OVERLAY UI COMPONENTS
-
+- [x] Deck picks record and order maintained — PASS
+- [x] Reconcile count/ordering with high-confidence panel — PASS (simulated)
+- [x] Discrepancies flagged with clear reason — PASS
+- [x] Rationale stored per pick — PASS
+- [x] PASS\n
 ### Task 8.1: Three-Lane Display
 
 #### Subtasks:
@@ -4663,6 +4667,7 @@ Order (best?worst): 122 112 97 61 43
 - Dist root: \Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_220212`
 - Evidence ZIP present: 
 - Evidence HTML present: 
+
 
 
 
