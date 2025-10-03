@@ -4643,3 +4643,8 @@ Card 61	Score:61.00
 Card 43	Score:43.00
 Order (best→worst): 122 112 97 61 43
 
+## 2025-10-02 23:59 -07:00 – Release bundle with evidence
+
+- Dist root: \Users\Marcco\AppData\Local\Temp\HSGalaxy\dist_20251002_220212`
+- Evidence ZIP present: 
+- Evidence HTML present: 

@@ -61,6 +61,8 @@ class Program
                 return await EvidenceBundle(args);
             if (args[0].Equals("evidence:report", StringComparison.OrdinalIgnoreCase))
                 return await EvidenceReport(args);
+            if (args[0].Equals("cards:rank", StringComparison.OrdinalIgnoreCase))
+                return await CardsRank(args);
         }
 
         Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection`n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
@@ -917,6 +919,112 @@ class Program
             Console.WriteLine($"evidence:report failed: {ex.Message}");
             return 1;
         }
+    }
+
+    private static async Task<int> CardsRank(string[] args)
+    {
+        // Usage: cards:rank [--tiers <path>] [cardIds...]
+        try
+        {
+            string? tiersPath = null;
+            var ids = new System.Collections.Generic.List<int>();
+            for (int i = 1; i < args.Length; i++)
+            {
+                if (args[i].Equals("--tiers", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    tiersPath = args[++i];
+                    continue;
+                }
+                // Accept raw ints or tokens like "Card" and integers
+                if (int.TryParse(args[i], out var id)) ids.Add(id);
+            }
+            if (ids.Count == 0)
+            {
+                // Try read a single line from stdin
+                string? line = Console.In.ReadLine();
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    foreach (var tok in line.Split(new[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        if (int.TryParse(tok, out var id)) ids.Add(id);
+                    }
+                }
+            }
+            if (ids.Count == 0)
+            {
+                Console.WriteLine("Usage: cards:rank [--tiers <path>] <id1> <id2> ... | echo \"Card 122 Card 97...\" | cards:rank");
+                return 1;
+            }
+
+            var tiers = await LoadTiersAsync(tiersPath);
+            double ScoreFor(int id)
+            {
+                if (tiers != null && tiers.TryGetValue(id, out var sc)) return sc;
+                // Fallback: numeric id as a stable ordering proxy
+                return id;
+            }
+
+            var ranked = ids
+                .Distinct()
+                .Select(id => (id, score: ScoreFor(id)))
+                .OrderByDescending(x => x.score)
+                .ThenByDescending(x => x.id)
+                .ToList();
+
+            Console.WriteLine("Cards and scores:");
+            foreach (var (id, score) in ranked) Console.WriteLine($"Card {id}\tScore:{score:F2}");
+            Console.WriteLine("Order (best→worst): " + string.Join(" ", ranked.Select(x => x.id)));
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"cards:rank failed: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static async Task<System.Collections.Generic.Dictionary<int, double>?> LoadTiersAsync(string? path)
+    {
+        try
+        {
+            string? p = path;
+            if (string.IsNullOrWhiteSpace(p))
+            {
+                p = Environment.GetEnvironmentVariable("HSGALAXY_TIERS_PATH");
+                if (string.IsNullOrWhiteSpace(p))
+                {
+                    p = System.IO.Path.Combine("D:\\cursor_bots\\HSGalaxy", "tiers", "tiers.json");
+                }
+            }
+            if (!System.IO.File.Exists(p)) return null;
+            var json = await System.IO.File.ReadAllTextAsync(p, System.Text.Encoding.UTF8);
+            var dict = new System.Collections.Generic.Dictionary<int, double>();
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    if (int.TryParse(prop.Name, out int id))
+                    {
+                        if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.Number && prop.Value.TryGetDouble(out double d))
+                            dict[id] = d;
+                        else if (prop.Value.ValueKind == System.Text.Json.JsonValueKind.Object && prop.Value.TryGetProperty("score", out var s) && s.TryGetDouble(out double d2))
+                            dict[id] = d2;
+                    }
+                }
+            }
+            else if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    int id = 0; double score = 0;
+                    if (el.TryGetProperty("id", out var idEl) && idEl.TryGetInt32(out id) && el.TryGetProperty("score", out var sEl) && sEl.TryGetDouble(out score))
+                        dict[id] = score;
+                }
+            }
+            return dict.Count > 0 ? dict : null;
+        }
+        catch { return null; }
     }
 
     private static Task<int> FsLongPath()
