@@ -210,7 +210,19 @@ public partial class CalibrationWizardWindow : Window
         var client = OcrClientSelector.Create();
         var pipeline = new OcrPipeline(client);
         using var cap = new HSGalaxy.UI.Capture.CaptureManager();
-        var result = await pipeline.RunOnceAsync(profile, r => cap.Capture(new System.Drawing.Rectangle(r.X, r.Y, r.Width, r.Height)));
+        HSGalaxy.Core.OCR.OcrResult result;
+        bool offline = false;
+        try
+        {
+            result = await pipeline.RunOnceAsync(profile, r => cap.Capture(new System.Drawing.Rectangle(r.X, r.Y, r.Width, r.Height)));
+        }
+        catch (Exception ex)
+        {
+            offline = true;
+            try { OverlayLogger.Log("Wizard.OCR.Fallback", ex.Message); } catch { }
+            var sim = new HSGalaxy.Core.OCR.SimulatedOcrClient();
+            result = await new HSGalaxy.Core.OCR.OcrPipeline(sim).RunOnceAsync(profile, r => cap.Capture(new System.Drawing.Rectangle(r.X, r.Y, r.Width, r.Height)));
+        }
         var list = new System.Collections.ObjectModel.ObservableCollection<OcrRow>();
         for (int i = 0; i < rois.Count; i++)
         {
@@ -229,7 +241,8 @@ public partial class CalibrationWizardWindow : Window
         }
         _ocrAll = list;
         ApplyOcrFilters();
-        TxtOcrMeta.Text = $"Source:{result.Source}  Elapsed:{result.ElapsedMs:F1}ms  Lines:{result.Lines.Count}";
+        TxtOcrMeta.Text = $"Source:{result.Source}{(offline || !result.Source.StartsWith("Azure", StringComparison.OrdinalIgnoreCase) ? " (fallback)" : string.Empty)}  Elapsed:{result.ElapsedMs:F1}ms  Lines:{result.Lines.Count}";
+        TxtOcrOffline.Visibility = (offline || !result.Source.StartsWith("Azure", StringComparison.OrdinalIgnoreCase)) ? Visibility.Visible : Visibility.Collapsed;
         SetStatus("OCR run complete.");
         try { OverlayLogger.Log("Wizard.OCR.Run", $"Source={result.Source}; Lines={result.Lines.Count}; ElapsedMs={result.ElapsedMs:F1}"); } catch { }
     }

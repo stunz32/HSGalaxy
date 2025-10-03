@@ -21,6 +21,13 @@ namespace HSGalaxy.OCR.Azure
 
         public async Task<OcrResult> RecognizeAsync(byte[] pngImage, CancellationToken ct = default)
         {
+            var force429 = string.Equals(Environment.GetEnvironmentVariable("HSGALAXY_OCR_FORCE_429"), "1", StringComparison.OrdinalIgnoreCase);
+            var forceOffline = string.Equals(Environment.GetEnvironmentVariable("HSGALAXY_OCR_FORCE_OFFLINE"), "1", StringComparison.OrdinalIgnoreCase);
+            if (forceOffline)
+                throw new HttpRequestException("Forced offline for test", null, System.Net.HttpStatusCode.ServiceUnavailable);
+            if (force429)
+                throw new HttpRequestException("Forced 429 for test", null, System.Net.HttpStatusCode.TooManyRequests);
+
             var endpoint = Environment.GetEnvironmentVariable("HSGALAXY_AZURE_VISION_ENDPOINT");
             var apiKey = Environment.GetEnvironmentVariable("HSGALAXY_AZURE_VISION_KEY");
             if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(apiKey))

@@ -91,6 +91,7 @@ Press and drag on the overlay to create a ROI. Drag inside a ROI to move it. Pre
                                 <Button Content="Copy Text Only" Margin="6,0,0,0" Click="BtnCopyTextOnly_Click"/>
                                 <Button Content="Save Results" Margin="6,0,0,0" Click="BtnSaveResults_Click"/>
                                 <TextBlock x:Name="TxtOcrMeta" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="TxtOcrOffline" Margin="12,0,0,0" Foreground="#FFFF0A70" FontWeight="Bold" Visibility="Collapsed" Text="Offline Mode"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
                                 <TextBlock Text="Filter ROI:" VerticalAlignment="Center"/>

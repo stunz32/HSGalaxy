@@ -4266,3 +4266,20 @@ Remember to:
     - wizard1_copy_renamed  (updated 2025-09-30 18:41)
     - SelfTest  (updated 2025-09-29 20:34)
     - wizard1  (updated 2025-09-29 20:06)
+## 2025-10-02 20:52 -07:00 – Long path + OCR offline/429 fallback validations
+
+- Long path runtime test (CLI)
+  - Command: dotnet run --project src/HSGalaxy.CLI -- fs:longpath
+  - Output: Wrote: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\longpath_cli\aaaaaaaa...\test.txt (len=401)
+
+- OCR offline fallback
+  - Command: set HSGALAXY_AZURE_VISION_ENDPOINT=https://example.cognitiveservices.azure.com; set HSGALAXY_AZURE_VISION_KEY=fakekey; set HSGALAXY_OCR_FORCE_OFFLINE=1; dotnet run --project src/HSGalaxy.CLI -- ocr:test
+  - Output (excerpt):
+    Primary OCR client failed: HttpRequestException - Forced offline for test. Falling back to Simulated.
+    OCR Client: SimulatedOCR (fallback), Elapsed: 43.6 ms, Lines: 3
+
+- OCR 429 fallback
+  - Command: set HSGALAXY_OCR_FORCE_OFFLINE=; set HSGALAXY_OCR_FORCE_429=1; dotnet run --project src/HSGalaxy.CLI -- ocr:test
+  - Output (excerpt):
+    Primary OCR client failed: HttpRequestException - Forced 429 for test. Falling back to Simulated.
+    OCR Client: SimulatedOCR (fallback), Elapsed: 33.2 ms, Lines: 5

@@ -47,6 +47,8 @@ class Program
                 return await StorageValidate();
             if (args[0].Equals("storage:primary-probe", StringComparison.OrdinalIgnoreCase))
                 return await StoragePrimaryProbe();
+            if (args[0].Equals("fs:longpath", StringComparison.OrdinalIgnoreCase))
+                return await FsLongPath();
             if (args[0].Equals("strip:render", StringComparison.OrdinalIgnoreCase))
                 return await StripRender(args);
             if (args[0].Equals("wgc:fps", StringComparison.OrdinalIgnoreCase))
@@ -57,7 +59,7 @@ class Program
                 return await WgcValidate(args);
         }
 
-        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
+        Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection`n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
         return 0;
     }
 
@@ -126,13 +128,25 @@ class Program
         calib.Regions.Add(new Roi { Id = "r2", X = 500, Y = 100, Width = 300, Height = 80 });
         calib.Regions.Add(new Roi { Id = "r3", X = 900, Y = 100, Width = 300, Height = 80 });
 
-        // Auto-select OCR client: Azure if configured, else simulated
+        // Auto-select OCR client: Azure if configured, else simulated. Fallback to simulated on failure (offline/429).
         var client = OcrClientSelector.Create();
         var pipeline = new OcrPipeline(client);
         using var cap = new CaptureManager();
-        var result = await pipeline.RunOnceAsync(calib, rect => cap.Capture(new System.Drawing.Rectangle(rect.X, rect.Y, rect.Width, rect.Height)));
+        OcrResult result;
+        bool fallback = false;
+        try
+        {
+            result = await pipeline.RunOnceAsync(calib, rect => cap.Capture(new System.Drawing.Rectangle(rect.X, rect.Y, rect.Width, rect.Height)));
+        }
+        catch (Exception ex)
+        {
+            fallback = true;
+            Console.WriteLine($"Primary OCR client failed: {ex.GetType().Name} - {ex.Message}. Falling back to Simulated.");
+            var sim = new SimulatedOcrClient();
+            result = await new OcrPipeline(sim).RunOnceAsync(calib, rect => cap.Capture(new System.Drawing.Rectangle(rect.X, rect.Y, rect.Width, rect.Height)));
+        }
 
-        Console.WriteLine($"OCR Client: {result.Source}, Elapsed: {result.ElapsedMs:F1} ms, Lines: {result.Lines.Count}");
+        Console.WriteLine($"OCR Client: {result.Source}{(fallback ? " (fallback)" : string.Empty)}, Elapsed: {result.ElapsedMs:F1} ms, Lines: {result.Lines.Count}");
         foreach (var line in result.Lines)
         {
             Console.WriteLine($"ROI:{line.RoiIndex} Conf:{line.Confidence:F2} Text:{line.Text}");
@@ -777,8 +791,29 @@ class Program
         return Task.FromResult(0);
     }
 
+    private static Task<int> FsLongPath()
+    {
+        try
+        {
+            var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HSGalaxy", "longpath_cli");
+            var seg = new string('a', 40);
+            string path = root;
+            for (int i = 0; i < 8; i++) path = System.IO.Path.Combine(path, seg + i.ToString());
+            System.IO.Directory.CreateDirectory(path);
+            var file = System.IO.Path.Combine(path, "test.txt");
+            var content = $"LongPath OK @ {DateTime.Now:O}";
+            System.IO.File.WriteAllText(file, content);
+            Console.WriteLine($"Wrote: {file} (len={file.Length})");
+            return Task.FromResult(0);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"LongPath test failed: {ex.Message}");
+            return Task.FromResult(1);
+        }
+    }
+
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hWnd);
 }
-
