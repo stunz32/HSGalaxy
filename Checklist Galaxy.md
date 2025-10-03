@@ -4542,3 +4542,13 @@ Remember to:
 - OCR tests
   - Command: `dotnet test tests/HSGalaxy.OCR.Tests/HSGalaxy.OCR.Tests.csproj -v:minimal`
   - Output (summary): `Passed!  - Failed: 0, Passed: 3, Skipped: 0, Total: 3`
+
+## 2025-10-03 23:03 -07:00 – Evidence bundle ZIP
+
+- Command: `dotnet run --project src/HSGalaxy.CLI -- evidence:bundle`
+- Output: `Evidence bundle: C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\evidence_20251002_215334.zip`
+- Contents:
+  - overlay.log (primary or fallback)
+  - Wizard screenshots (wizard_selftest_*.png)
+  - Status strips (strip_*.png)
+  - Latest exported profiles (exports_all3/*.json)

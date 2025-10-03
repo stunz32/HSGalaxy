@@ -57,6 +57,8 @@ class Program
                 return await WgcWindow(args);
             if (args[0].Equals("wgc:validate", StringComparison.OrdinalIgnoreCase))
                 return await WgcValidate(args);
+            if (args[0].Equals("evidence:bundle", StringComparison.OrdinalIgnoreCase))
+                return await EvidenceBundle(args);
         }
 
         Console.WriteLine("HSGalaxy CLI\nCommands:\n  net:test                 Run HTTP client tests (100x httpbin.org)\n  ocr:test                 Run OCR pipeline (auto: Azure if configured, else simulated)\n  ocr:azure                Force Azure v4 (requires env vars)\n  ocr:azure32              Force Azure v3.2 (requires env vars)\n  calib:test               Save+load a calibration profile and verify\n  calib:capture            Save a composite PNG of sample ROIs to %TEMP% for debugging\n  calib:capture-profile    Capture composite PNG for a saved profile (usage: calib:capture-profile <name>)\n  calib:list               List saved profiles in the calibration folder\n  calib:export             Export a profile to a JSON file (usage: calib:export <name> <path>)\n  calib:export-all         Export all profiles to a folder (usage: calib:export-all <folder>)\n  calib:import             Import a JSON profile (usage: calib:import <path> [--name <newname>])\n  calib:rename             Rename a saved profile (usage: calib:rename <old> <new>)\n  calib:delete             Delete a saved profile (usage: calib:delete <name>)\n  calib:mkprofile-window   Create profile for a window (usage: calib:mkprofile-window <query> <name>)\n  storage:validate         Ensure dirs + write test files; prints root/fallback\n  storage:primary-probe    Create primary root and re-validate selection`n  fs:longpath              Create a >260-char path and write a test file\n  strip:render             Render status strip PNG at a given DPI (usage: strip:render [dpi=120] [theme=dark|light|safe])\n  wgc:fps                  Run Windows Graphics Capture FPS self-test (reflection-guarded; falls back to GDI)\n  wgc:window               Capture a window by title/class substring for ~0.5s and print FPS (usage: wgc:window <query>)\n  wgc:validate             Validate minimize/restore (and optional close) on a target window (usage: wgc:validate <query> [--close])");
@@ -789,6 +791,72 @@ class Program
         Console.WriteLine($"Storage Root: {sm.RootPath}");
         Console.WriteLine($"Using Fallback: {sm.IsUsingFallback}");
         return Task.FromResult(0);
+    }
+
+    private static async Task<int> EvidenceBundle(string[] args)
+    {
+        try
+        {
+            string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HSGalaxy");
+            System.IO.Directory.CreateDirectory(temp);
+            string root = System.IO.Path.Combine(temp, $"evidence_{stamp}");
+            System.IO.Directory.CreateDirectory(root);
+
+            // Collect overlay.log (primary and fallback)
+            var candidates = new System.Collections.Generic.List<string>();
+            candidates.Add(System.IO.Path.Combine("D:", "cursor_bots", "HSGalaxy", "logs", "overlay.log"));
+            candidates.Add(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HSGalaxy", "logs", "overlay.log"));
+
+            foreach (var c in candidates)
+            {
+                if (System.IO.File.Exists(c))
+                {
+                    var dest = System.IO.Path.Combine(root, System.IO.Path.GetFileNameWithoutExtension(c) + "_" + (System.IO.Path.GetDirectoryName(c) ?? "").Replace(':','_').Replace('\\','_') + ".log");
+                    System.IO.File.Copy(c, dest, overwrite:true);
+                }
+            }
+
+            // Collect Wizard screenshots and strip renders
+            void CopyIfExists(string pattern)
+            {
+                var dir = new System.IO.DirectoryInfo(temp);
+                if (!dir.Exists) return;
+                foreach (var f in dir.GetFiles(pattern))
+                {
+                    var dest = System.IO.Path.Combine(root, f.Name);
+                    f.CopyTo(dest, overwrite:true);
+                }
+            }
+            CopyIfExists("wizard_selftest_*.png");
+            CopyIfExists("strip_*.png");
+
+            // Collect exported profiles (latest export folder if exists)
+            try
+            {
+                var exRoot = new System.IO.DirectoryInfo(System.IO.Path.Combine(temp, "exports_all3"));
+                if (exRoot.Exists)
+                {
+                    var dest = System.IO.Path.Combine(root, "exports_all3");
+                    System.IO.Directory.CreateDirectory(dest);
+                    foreach (var f in exRoot.GetFiles("*.json"))
+                        f.CopyTo(System.IO.Path.Combine(dest, f.Name), overwrite:true);
+                }
+            }
+            catch { }
+
+            // Zip it up
+            string zipPath = System.IO.Path.Combine(temp, $"evidence_{stamp}.zip");
+            if (System.IO.File.Exists(zipPath)) System.IO.File.Delete(zipPath);
+            System.IO.Compression.ZipFile.CreateFromDirectory(root, zipPath);
+            Console.WriteLine($"Evidence bundle: {zipPath}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"evidence:bundle failed: {ex.Message}");
+            return 1;
+        }
     }
 
     private static Task<int> FsLongPath()
