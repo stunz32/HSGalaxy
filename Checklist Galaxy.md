@@ -961,9 +961,15 @@ Key files:
   ```
 
 #### Validation Gate 5.3:
-- [ ] Test v3.2 with same 10 images as v4
-- [ ] Verify polling completes within 2 seconds
-- [ ] Results format compatible with v4
+- [x] Test v3.2 with same 10 images as v4 — PASS (2025-10-03)
+  - Commands:
+    - `set EP=%HSGALAXY_AZURE_VISION_ENDPOINT% & set KEY=%HSGALAXY_AZURE_VISION_KEY% & dotnet run -c Release --no-build --project src/HSGalaxy.CLI -- ocr:azure`
+    - `set EP=%HSGALAXY_AZURE_VISION_ENDPOINT% & set KEY=%HSGALAXY_AZURE_VISION_KEY% & dotnet run -c Release --no-build --project src/HSGalaxy.CLI -- ocr:azure32`
+    - 10x loop timings:
+      - v4 Avg≈1785.9 ms (Max 1912.9 ms)
+      - v3.2 Avg≈1897.5 ms (Max 1965.0 ms)
+- [x] Verify polling completes within 2 seconds — PASS (v4 and v3.2 all < 2000 ms over 10 runs)
+- [x] Results format compatible with v4 — PASS (common `OcrResult` mapping; both clients parsed without errors)
 - [ ] Fallback triggers on v4 timeout (Note: current selector chooses v4 if available; runtime failover to v3.2 not wired yet)
 - [ ] **STOP if any validation fails**
 
