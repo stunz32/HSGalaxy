@@ -4428,3 +4428,24 @@ Remember to:
 - WGC FPS quick test
   - Command: `dotnet run --project src/HSGalaxy.CLI -- wgc:fps`
   - Output: `WGC FPS: 28.0 (PASS)`
+
+## 2025-10-03 22:15 -07:00 – Overlay log health + extra strip proof
+
+- Regenerate overlay.log with Wizard self-test (overlay enabled)
+  - Env:
+    - `$env:HSGALAXY_AZURE_VISION_ENDPOINT='https://example.cognitiveservices.azure.com'`
+    - `$env:HSGALAXY_AZURE_VISION_KEY='fakekey'`
+    - `$env:HSGALAXY_OCR_FORCE_OFFLINE='1'`
+    - `$env:HSGALAXY_SHOW_WIZARD='1'`
+    - `$env:HSGALAXY_WIZARD_SELFTEST='1'`
+    - `$env:HSGALAXY_EXIT_AFTER_TEST='1'`
+  - Command: `dotnet run --project src/HSGalaxy.App`
+  - overlay.log (D:\cursor_bots\HSGalaxy\logs\overlay.log excerpt):
+    2025-10-02T21:45:04.3169163-07:00	Wizard.SelfTest	PASS
+    2025-10-02T21:45:04.4406673-07:00	Wizard.OCR.Fallback	Forced offline for test
+    2025-10-02T21:45:04.4674514-07:00	Wizard.OCR.Run	Source=SimulatedOCR; Lines=5; ElapsedMs=19.4
+  - Error scan: NO_ERRORS (no lines matching “.Error” or “ Error”).
+
+- Extra status strip (safe theme)
+  - Command: `dotnet run --project src/HSGalaxy.CLI -- strip:render 120 safe`
+  - Output file: `C:\Users\Marcco\AppData\Local\Temp\HSGalaxy\strip_dpi120_safe_20251002_214525.png`
